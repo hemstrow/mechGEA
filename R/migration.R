@@ -164,10 +164,12 @@ estimate_migration <- function(data,
                                cores = max(1L, parallel::detectCores() - 2L)) {
   
   # Copy the original likeGEA Stan files into ./stan before running.
-  stan_file <- file.path("stan", paste0(sub("\\.stan$", "", model), ".stan"))
-  hpp_file <- file.path("stan", "coalescent_time.hpp")
-  if (!file.exists(stan_file)) stop("Missing Stan model: ", stan_file)
-  if (!file.exists(hpp_file)) stop("Missing Stan header: ", hpp_file)
+  stan_dir <- "/projects/ericacnr@colostate.edu/likeGEA_bebug/likeGEA/"
+  
+  stan_file <- file.path(stan_dir, paste0(sub("\\.stan$", "", model), ".stan"))
+  hpp_file <- file.path(stan_dir, "coalescent_time.hpp")
+  
+  stopifnot(file.exists(stan_file), file.exists(hpp_file))
   
   N_patch <- data$N_patch
   stopifnot(is.matrix(data$pi_off),
@@ -186,8 +188,14 @@ estimate_migration <- function(data,
   
   mod <- cmdstanr::cmdstan_model(
     stan_file,
-    cpp_options = list(USER_HEADER = normalizePath(hpp_file), stan_threads = TRUE),
-    stanc_options = list("allow-undefined" = TRUE, "O1")
+    cpp_options = list(
+      USER_HEADER = normalizePath(hpp_file),
+      stan_threads = TRUE
+    ),
+    stanc_options = list(
+      "allow-undefined" = TRUE,
+      "O1"
+    )
   )
   
   threads_per_chain <- max(1L, floor(cores / chains))
