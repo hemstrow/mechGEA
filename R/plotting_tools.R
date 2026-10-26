@@ -1,15 +1,13 @@
-#' Plot migration stan model results.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use or when partial re-runs are needed.
-#'
 #' @export
-plot_migration <- function(M, data, coordinates,
-                           threshold_value = 0.4,
-                           topn = 2,
-                           bin_size = 1){
+#' @describeIn mechGEA Plot migration model results. Consider running with \code{\link{mechGEA}} for the full pipeline.
+plot_migration <- function(migration_results, migration_data, patches_xy,
+                           mig_plot_threshold = 0.4,
+                           mig_plot_topn = 2,
+                           mig_plot_bin_size = 1){
 
-  DistM = data$DistM
+  data <- migration_data; rm(migration(data))
+  DistM <- data$DistM
+  M <- migration_results; rm(migration_results)
 
   ## N_ind_per_patch comes from the migration data (already in coordinates order)
   N_ind_per_patch = data$N_table
@@ -24,18 +22,18 @@ plot_migration <- function(M, data, coordinates,
     row_values <- M[i, ]
     row_values[i] <- NA
 
-    topn_indices <- order(row_values, decreasing = TRUE)[1:topn]
-    threshold_indices <- which(M[i, ] >= threshold_value)
+    topn_indices <- order(row_values, decreasing = TRUE)[1:mig_plot_topn]
+    threshold_indices <- which(M[i, ] >= mig_plot_threshold)
     union_indices <- union(topn_indices, threshold_indices)
 
     for (j in union_indices) {
       migration_lines <- rbind(migration_lines, data.frame(
-        patch_from = coordinates$patch[i],
-        patch_to   = coordinates$patch[j],
-        lon_from   = coordinates$lon[i],
-        lat_from   = coordinates$lat[i],
-        lon_to     = coordinates$lon[j],
-        lat_to     = coordinates$lat[j],
+        patch_from = patches_xy$patch[i],
+        patch_to   = patches_xy$patch[j],
+        lon_from   = patches_xy$lon[i],
+        lat_from   = patches_xy$lat[i],
+        lon_to     = patches_xy$lon[j],
+        lat_to     = patches_xy$lat[j],
         migration_rate = M[i, j],
         mig_rate = M[i, j]
       ))
@@ -56,8 +54,8 @@ plot_migration <- function(M, data, coordinates,
            mid_lat = (lat_from + lat_to) / 2)
 
   migration_lines <- migration_lines |>
-    dplyr::mutate(mid_lon_bin = round(mid_lon / bin_size) * bin_size,
-           mid_lat_bin = round(mid_lat / bin_size) * bin_size)
+    dplyr::mutate(mid_lon_bin = round(mid_lon / mig_plot_bin_size) * mig_plot_bin_size,
+           mid_lat_bin = round(mid_lat / mig_plot_bin_size) * mig_plot_bin_size)
 
   migration_lines <- migration_lines |>
     dplyr::group_by(mid_lon_bin, mid_lat_bin) |>
@@ -68,8 +66,8 @@ plot_migration <- function(M, data, coordinates,
 
   ## Bounding box: pad by the larger of 20% of the coordinate range or 0.5 degrees,
   ## so that small study areas still show enough geographic context.
-  lon_range <- range(coordinates$lon)
-  lat_range <- range(coordinates$lat)
+  lon_range <- range(patches_xy$lon)
+  lat_range <- range(patches_xy$lat)
   pad_lon   <- max(diff(lon_range) * 0.20, 0.5)
   pad_lat   <- max(diff(lat_range) * 0.20, 0.5)
   xlim      <- lon_range + c(-pad_lon, pad_lon)
@@ -101,7 +99,7 @@ plot_migration <- function(M, data, coordinates,
     ggplot2::scale_color_gradient(name = "Rel. Migration Rate", low = "yellow", high = "red", trans = "log10") +
     ## Sampling sites
     ggplot2::geom_point(
-      data = coordinates,
+      data = patches_xy,
       ggplot2::aes(x = lon, y = lat, size = N_ind_per_patch),
       fill = "grey50", color = "black", shape = 21, stroke = 1
     ) +
@@ -158,12 +156,9 @@ plot_migration <- function(M, data, coordinates,
   return(combined_plot)
 }
 
-#' Plot migration core stan GEA results.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use or when partial re-runs are needed.
-#'
+
 #' @export
+#' @describeIn mechGEA Plot GEA model results. Consider running with \code{\link{mechGEA}} for the full pipeline.
 plot_gea <- function(stan_data,
                      migration_results,
                      beta_draw,

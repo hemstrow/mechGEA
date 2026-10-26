@@ -1,6 +1,6 @@
-#' Likelihood-based genome-environment association test with migration pipeline.
+#' Mechanistic genome-environment association tests.
 #'
-#' Runs the core likelihood-based GEA-with-migration pipeline, producing
+#' Core functions for the mechanistic GEA-with-migration pipeline, producing
 #' output files and plots in the working directory (and returned as an object).
 #' For large data (e.g. many SNPs), consider running this on small \code{Phred}
 #' batches and then combining.
@@ -8,6 +8,68 @@
 #' @param Phred Phred-scaled genotype liklelihoods, as generated from a
 #'   \code{.beagle} or \code{.beagle.gz} file by \code{\link{beagle2pl}}. See
 #'   \code{\link{example_gl}}\code{$likelihoods} for an example.
+#' @param patch_info \code{\link[base]{data.frame}} or similar. Patch
+#'   information for each sample in a two-column data.frame with column names
+#'   \code{ind_id} and \code{patch}. Important note: samples \emph{MUST} be
+#'   sorted in blocks by patch (all samples in one patch must be in blocks).
+#'   Data fitting this format can be produced by \code{\link{prepare_metadata}}.
+#' @param patches_xy \code{\link[base]{data.frame}} or similar. Spatial
+#'   coordinates for each patch, with three columns named \code{patch},
+#'   \code{lat}, and \code{lon}. Must be ordered identically to order of patch
+#'   appearance in \code{patch_info}. Data fitting this format can be produced by
+#'   \code{\link{prepare_metadata}}.
+#' @param env \code{\link[base]{data.frame}} or similar. Uncorrelated, scaled
+#'   environmental variables for each patch, with N + 1 columns. The first
+#'   column must be named \code{patch} and contain patch names. The additional N
+#'   columns can have any name and can contain Z-scaled env data (mean = 0, sd =
+#'   1). Patches must be ordered identically to order of patch appearance in
+#'   \code{patch_info}. Data fitting this format can be produced by
+#'   \code{\link{prepare_metadata}} and uncorrelated envs can be selected using
+#'   \code{\link{prune_envs}}.
+#' @param N_sim_mig integer, default 100. NIKUNJ HERE PLEASE! Ignored if
+#'   \code{migration_results} are provided.
+#' @param migration_loci integer, default 1000. Number of loci to use from
+#'   \code{Phred} to use for estimating migration. Must be equal to or less
+#'   than the total number of provided loci. Ignored if \code{migration_results}
+#'   are provided.
+#' @param k_sd numeric, default 4. NIKUNJ HERE PLEASE!
+#' @param p0 numeric, default 20. NIKUNJ HERE PLEASE!
+#' @param seed integer, default 42. Seed used for all model steps.
+#' @param migration_model character, default "migration_fast". Choice of model
+#'   for estimating migration. Options are "migration_fast" or "migration_M3b".
+#'   See details. NIKUNJ HERE PLEASE!
+#' @param max_attempts_mig integer, default 10. Number of times to try
+#'   fitting the migration model. If the model does not converge after
+#'   \code{max_attempts_mig} tries, the best fit model will be used.
+#' @param target_div_pct_mig numeric, default 1. NIKUNJ HERE PLEASE!
+#' @param target_rhat_pct_mig numeric, default 1. NIKUNJ HERE PLEASE!
+#' @param chains_mig integer, default 4. Number of chains to run for the
+#'   Bayesian migration model fitting.
+#' @param iter_sampling_mig integer, default 1000. Number of sampling iterations
+#'   to run the Bayesian migration model fitting.
+#' @param iter_warmup_mig integer, default 1000. Number of warm-up/burn-in
+#'   iterations to run the Bayesian migration model fitting.
+#' @param max_treedepth_mig integer, default 12. Maximum tree-depth to
+#'   use during Bayesian migration model fitting.
+#' @param refresh_mig integer, default 200. Controls how often model
+#'   progress is reported during Bayesian migration model fitting.
+#' @param mig_plot_threshold numeric, default 0.4. For plotting migration model
+#'   results, controls the migration strength threshold above which migration
+#'   connections will be included in networks.
+#' @param mig_plot_topn integer, default 2. Number of migratory
+#'   connections to consider for each pixel when plotting migration networks.
+#'   NIKUNJ HERE PLEASE!
+#' @param mig_plot_binsize integer, default 1. NIKUNJ HERE PLEASE!
+#' @param chains_gea integer, default 2. Number of chains to run for the GEA
+#'   model.
+#' @param refresh_gea integer, default 200. Controls how often model progress is
+#'   reported during GEA model fitting.
+#' @param iter_sampling_gea integer, default 250. Number of sampling iterations
+#'   to run the during GEA model fitting.
+#' @param iter_warmup_gea integer, default 200. Number of warm-up/burn-in
+#'   iterations to run the during GEA model fitting.
+#' @param CI numeric, default 0.95. Confidence interval to plot for the
+#'   GEA model.
 #' @param migration_results list or NULL, default NULL. If provided,
 #'   \code{mechGEA} will use migration results in the list format produced by
 #'   \code{\link{estimate_migration}} rather than re-running with the provided
@@ -19,11 +81,34 @@
 #'   to assess migration once with a set of loci and then use that assessment
 #'   for other genomic chunks (see \code{migration_results} to pick up the
 #'   model with the results in other chunks.).
+#' @param par integer, default \code{parallel::detectCores() - 2}, two less
+#'   than the available cores. Maximum number of cores to allocate for model
+#'   fitting; the number of cores per chain will be \code{par}/\code{N_chains}.
+#' @param migration_data list containing data for migration model, in the
+#'   format produced by \code{\link{prepare_mig_data}}\code{$migration_data}.
+#' @param stan_data list containing data for the stan GEA model fitting, in the
+#'   format produced by \code{\link{prepare_mig_data}}\code{$stan_data}.
+#' @param nloci integer, number of loci in the source data for the stan model.
+#' @param nenv integer, number of environmental variables in the source data for
+#'   the stan model.
+#' @param beta_draw beta parameter sampling/draw data from a fit GEA model, as
+#'   produced by \code{\link{run_stan_GEA_model}}\code{$beta_draw}.
+#' @param rho_kappa_mu parameter fit data from a GEA model, as produced by
+#'   \code{\link{run_stan_GEA_model}}\code{$rho_kapp_mu}.
+#' @param beta_summary beta parameter summary data from a fit GEA model, as
+#'   produced by \code{\link{beta_summary}}\code{$beta_summary}.
+#' @param env_names character, vector of environmental variable names.
 #'
 #' @author William Hemstrom, Nikunj Goel
 #'
 #' @export
+#' @name mechGEA
+#' @aliases plot_gea plot_migration prepare_mig_data estimate_migration run_stan_gea_model estimate_neff beta_summary
 #' @references Insert Goel et. al. ref here.
+NULL
+
+#' @export
+#' @describeIn mechGEA The full mechanistic GEA model pipeline.
 mechGEA <- function(Phred, patch_info, patches_xy, env,
                     migration_results = NULL,
                     N_sim_mig = 100,
@@ -31,7 +116,6 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                     k_sd = 4,
                     p0 = 20,
                     seed = 42,
-                    verbose = TRUE,
                     migration_model = "migration_fast",
                     max_attempts_mig = 10,
                     target_div_pct_mig = 1.0,
@@ -48,7 +132,7 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                     refresh_gea = 200,
                     iter_warmup_gea = 250,
                     iter_sampling_gea = 500,
-                    plotting_CI = 0.95,
+                    CI = 0.95,
                     stop_after_migration = FALSE,
                     par = parallel::detectCores() - 2){
 
@@ -64,7 +148,6 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
   dreamerr::check_set_arg(chains_gea, refresh_gea, iter_warmup_gea,
                           iter_sampling_gea, par, .type = "scalar integer")
   dreamerr::check_set_value(plotting_CI, .type = "scalar NONA numeric GE{0} LT{1}")
-  dreamerr::check_set_value(verbose, .type = "scalar NONA logical")
   dreamerr::check_set_arg(p0, k_sd, .type = "scalar NONA numeric")
 
 
@@ -85,25 +168,24 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
 
   #=====================1_prepare_data==============
   mig_data <- prepare_mig_data(Phred = Phred,
-                             individuals = patch_info,
-                             coordinates = patches_xy, env_data = env,
+                             patch_info = patch_info,
+                             patches_xy = patches_xy, env = env,
                              migration_loci = migration_loci,
                              N_sim = N_sim_mig,
-                             seed = seed,
-                             verbose = verbose)
+                             seed = seed)
 
   #=====================2_estimate_migration========
   if(is.null(migration_results)){
-    Migration <- estimate_migration(data = mig_data$migration_data,
-                                    model = migration_model,
-                                    max_attempts = max_attempts_mig,
-                                    target_div_pct = target_div_pct_mig,
-                                    target_rhat_pct = target_rhat_pct_mig,
-                                    chains = chains_mig,
-                                    iter_sampling = iter_sampling_mig,
-                                    iter_warmup = iter_warmup_mig,
-                                    max_treedepth = max_treedepth_mig,
-                                    refresh = refresh_mig,
+    Migration <- estimate_migration(migration_data = mig_data$migration_data,
+                                    migration_model = migration_model,
+                                    max_attempts_mig = max_attempts_mig,
+                                    target_div_pct_mig = target_div_pct_mig,
+                                    target_rhat_pct_mig = target_rhat_pct_mig,
+                                    chains_mig = chains_mig,
+                                    iter_sampling_mig = iter_sampling_mig,
+                                    iter_warmup_mig = iter_warmup_mig,
+                                    max_treedepth_mig = max_treedepth_mig,
+                                    refresh_mig = refresh_mig,
                                     par = par)
   } else {
     Migration <- migration_results; rm(migration_results)
@@ -115,26 +197,26 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
   }
 
   #=====================3_plot_migration========
-  mig_plot <- plot_migration(M = Migration,
-                             data = mig_data$migration_data,
-                             coordinates = patches_xy,
-                             threshold_value = mig_plot_threshold,
-                             topn = mig_plot_topn,
-                             bin_size = mig_plot_binsize)
+  mig_plot <- plot_migration(migration_results = Migration,
+                             migration_data = mig_data$migration_data,
+                             patches_xy = patches_xy,
+                             mig_plot_threshold = mig_plot_threshold,
+                             mig_plot_topn = mig_plot_topn,
+                             mig_plot_binsize = mig_plot_binsize)
 
   #=====================4_run_stan_model========
   GEA_res <- run_stan_GEA_model(stan_data = mig_data$stan_data,
                                 migration_results = Migration,
                                 k_sd = k_sd,
                                 p0 = p0,
-                                chains = chains_gea,
-                                refresh = refresh_gea,
-                                iter_warmup = iter_warmup_gea,
-                                iter_sampling = iter_sampling_gea,
+                                chains_gea = chains_gea,
+                                refresh_gea = refresh_gea,
+                                iter_warmup_gea = iter_warmup_gea,
+                                iter_sampling_gea = iter_sampling_gea,
                                 seed = seed,
                                 par = par)
 
-  beta_summary <- beta_summary(GEA_res$beta_draw,
+  beta_summary <- beta_summary(beta_draw = GEA_res$beta_draw,
                                nloci = mig_data$stan_data$N_locus,
                                nenv = mig_data$stan_data$N_env)
 
@@ -147,7 +229,7 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
            beta_summary = GEA_res$beta_summary,
            rho_kappa_mu =  GEA_res$rho_kappa_mu,
            env_names = colnames(env)[-1],
-           CI = plotting_CI)
+           CI = CI)
 
   #=====================6_estimate_neff========
   neff <- estimate_neff(mig_data$stan_data)
@@ -159,34 +241,33 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
               stan_and_migration_data = mig_data))
 }
 
-#' Prepare migration data for stan.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use.
-#'
 #' @export
-prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migration_loci,
-                            N_sim, seed = 42, verbose = TRUE) {
+#' @describeIn mechGEA Prepare migration data (and stan) data for modeling. Consider running with \code{\link{mechGEA}} for the full pipeline.
+prepare_mig_data <- function(Phred, patch_info, patches_xy, env, migration_loci,
+                             N_sim_mig, seed = 42) {
+
+  individuals <- patch_info; coordinates <- patches_xy; env_data <- env
+  N_sim <- N_sim_mig
+  rm(patch_info, patches_xy, env, N_sim)
 
 
-  if(verbose){
-    cat("Loaded:\n")
-    cat("  Phred:       ", nrow(Phred), "loci x", ncol(Phred), "individuals\n")
-    cat("  individuals: ", nrow(individuals), "rows\n")
-    cat("  coordinates: ", nrow(coordinates), "patches\n")
-    cat("  env_data:    ", nrow(env_data), "patches x", ncol(env_data) - 1, "env\n\n")
-    cat("Running input validation ...\n")
-  }
+
+  cat("Loaded:\n")
+  cat("  Phred:       ", nrow(Phred), "loci x", ncol(Phred), "individuals\n")
+  cat("  individuals: ", nrow(individuals), "rows\n")
+  cat("  coordinates: ", nrow(coordinates), "patches\n")
+  cat("  env_data:    ", nrow(env_data), "patches x", ncol(env_data) - 1, "env\n\n")
+  cat("Running input validation ...\n")
 
 
   validate_inputs(Phred, individuals, coordinates, env_data)
-  if(verbose){cat("  [OK] all sanity checks passed\n\n")}
+  cat("  [OK] all sanity checks passed\n\n")
 
 
   #========FAST PHRED VALIDATION (treat malformed cells as missing)========
 
 
-  if(verbose){cat("Validating Phred cell format ...\n")}
+  cat("Validating Phred cell format ...\n")
   Phred_vec  <- as.vector(Phred)
   valid_mask <- stringi::stri_detect_regex(Phred_vec, "^[0-9]+,[0-9]+,[0-9]+$")
   n_invalid  <- sum(!valid_mask)
@@ -196,8 +277,8 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   }
   n_total   <- length(Phred_vec)
   n_missing <- sum(Phred_vec == ".")
-  if(verbose){cat(sprintf("  %.2f%% of cells are missing (%d / %d)\n\n",
-                          100 * n_missing / n_total, n_missing, n_total))}
+  cat(sprintf("  %.2f%% of cells are missing (%d / %d)\n\n",
+              100 * n_missing / n_total, n_missing, n_total))
 
 
   #========SHARED SETUP========
@@ -212,8 +293,8 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   N_env   <- ncol(env_data) - 1L
   Env     <- as.matrix(env_data[, 2:(N_env + 1L)])
 
-  if(verbose){cat(sprintf("N_patch = %d, N_env = %d, sum(N_table) = %d (= N_ind)\n",
-                          N_patch, N_env, sum(N_table)))}
+  cat(sprintf("N_patch = %d, N_env = %d, sum(N_table) = %d (= N_ind)\n",
+              N_patch, N_env, sum(N_table)))
 
 
   #========LOCI SUBSAMPLE FOR MIGRATION ESTIMATION========
@@ -233,17 +314,17 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   }
   if (N_migration < 1000L) {
     N_migration <- min(1000L, N_locus)
-    if(verbose){cat(sprintf("  Note: migration set adjusted to minimum of %d loci.\n",
-                            N_migration))}
+    cat(sprintf("  Note: migration set adjusted to minimum of %d loci.\n",
+                            N_migration))
   }
   if (N_migration > N_locus)
     stop("migration_loci exceeds the total number of loci.")
 
-  if(verbose){cat(sprintf("Total loci: %d\n", N_locus))}
+  cat(sprintf("Total loci: %d\n", N_locus))
   if (N_locus > 10000L)
     message("  Tip: 1k-10k migration loci is the recommended range.\n")
-  if(verbose){cat(sprintf("  Migration set: %d loci (randomly sampled subset)\n", N_migration))}
-  if(verbose){cat(sprintf("  GEA scan set : %d loci (full set)\n\n", N_locus))}
+  cat(sprintf("  Migration set: %d loci (randomly sampled subset)\n", N_migration))
+  cat(sprintf("  GEA scan set : %d loci (full set)\n\n", N_locus))
 
   ## Random uniform-without-replacement subsample of N_migration loci from
   ## across the entire genome.  Seeded for reproducibility.
@@ -251,15 +332,15 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   migration_idx <- sort(sample(N_locus, N_migration))
 
   ## Convert Phred -> log-likelihood array (full set; migration block subsets).
-  if(verbose){cat("Parsing Phred -> log-likelihoods ...\n")}
+  cat("Parsing Phred -> log-likelihoods ...\n")
   gl_all <- phred_to_loglik(Phred)
-  if(verbose){cat(sprintf("  fraction NA: %.3f\n\n", mean(is.na(gl_all[, , 1]))))}
+  cat(sprintf("  fraction NA: %.3f\n\n", mean(is.na(gl_all[, , 1]))))
 
 
   #========PART A: STAN DATA  (G_eff, 2*N_eff for ALL loci)========
 
 
-  if(verbose){cat("=== Part A: (G_eff, 2*N_eff) for all loci (GEA scan set) ===\n")}
+  cat("=== Part A: (G_eff, 2*N_eff) for all loci (GEA scan set) ===\n")
   tictoc::tic("G_eff / 2*N_eff (gl moment match)")
   eff <- compute_N_eff_G_eff_gl(gl_all, N_table = N_table)
   tictoc::toc(quiet = FALSE, func.toc = toc_hours)
@@ -268,7 +349,7 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   TwoN_eff <- eff$TwoN_eff
   G_eff[is.na(G_eff)] <- 0   # zero-coverage cells -> zero-evidence in structured.stan
 
-  if(verbose){cat("Computing BetaBin_theta + Group (gl_p_est.stan input for 6_estimate_Neff) ...\n")}
+  cat("Computing BetaBin_theta + Group (gl_p_est.stan input for 6_estimate_Neff) ...\n")
   tictoc::tic("BetaBin_theta + Group")
   bb <- compute_BetaBin_theta_gl(gl_all, N_table)
   tictoc::toc(quiet = FALSE, func.toc = toc_hours)
@@ -287,12 +368,12 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
 
   dir.create("files", showWarnings = FALSE, recursive = TRUE)
   saveRDS(stan_data, "files/1_stan_data.RDS")
-  cat("Saved: files/1_stan_data.RDS\n\n") # always cat this, even if verbose = FALSE.
+  cat("Saved: files/1_stan_data.RDS\n\n")
 
   #========PART B: MIGRATION DATA  (pi_off, pi_diag, DistM from migration loci)========
 
-  if(verbose){cat("=== Part B: (pi_off, pi_diag) from migration loci ===\n")}
-  if(verbose){cat(sprintf("Averaging genotype resamples (N_sim = %d) ...\n", N_sim))}
+  cat("=== Part B: (pi_off, pi_diag) from migration loci ===\n")
+  cat(sprintf("Averaging genotype resamples (N_sim = %d) ...\n", N_sim))
 
   set.seed(seed + 1)
   gl_migration <- gl_all[migration_idx, , , drop = FALSE]
@@ -304,16 +385,16 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
     pi_s        <- compute_pi_genotype(geno_s, N_table)
     pi_off_sum  <- pi_off_sum  + pi_s$pi_off
     pi_diag_sum <- pi_diag_sum + pi_s$pi_diag
-    if(verbose){if (s %% 10L == 0L) cat(sprintf("  %d / %d\n", s, N_sim))}
+    if (s %% 10L == 0L) cat(sprintf("  %d / %d\n", s, N_sim))
   }
   tictoc::toc(quiet = FALSE, func.toc = toc_hours)
   pi_off  <- pi_off_sum  / N_sim
   pi_diag <- pi_diag_sum / N_sim
-  if(verbose){cat(sprintf("  pi_diag range          : [%.4f, %.4f]\n",
-                          min(pi_diag, na.rm = TRUE), max(pi_diag, na.rm = TRUE)))}
-  if(verbose){cat(sprintf("  pi_off (upper.tri) rng : [%.4f, %.4f]\n",
-                          min(pi_off[upper.tri(pi_off)], na.rm = TRUE),
-                          max(pi_off[upper.tri(pi_off)], na.rm = TRUE)))}
+  cat(sprintf("  pi_diag range          : [%.4f, %.4f]\n",
+              min(pi_diag, na.rm = TRUE), max(pi_diag, na.rm = TRUE)))
+  cat(sprintf("  pi_off (upper.tri) rng : [%.4f, %.4f]\n",
+              min(pi_off[upper.tri(pi_off)], na.rm = TRUE),
+              max(pi_off[upper.tri(pi_off)], na.rm = TRUE)))
 
   ## Geographic distance matrix from patch coordinates (geodesic; real data uses
   ## lat/lon, so this is the right measure -- not Euclidean).
@@ -335,27 +416,31 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
   return(list(migration_data = migration_data, stan_data = stan_data))
 }
 
-#' Estimate migration rates.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use or when partial re-runs are needed.
-#'
-#' @param model character, default "migration_fast". Choice of model for
-#'   estimating migration. Options are "migration_fast" or "migration_M3b".
-#'   See details.
 #' @export
-estimate_migration <- function(data,
-                               model = "migration_fast",
-                               max_attempts = 10,
-                               target_div_pct = 1.0,
-                               target_rhat_pct = 1.0,
-                               chains = 4,
-                               iter_sampling = 1000,
-                               iter_warmup = 1000,
-                               max_treedepth = 12,
-                               refresh = 200,
+#' @describeIn mechGEA Run the migration estimation model. Consider running with \code{\link{mechGEA}} for the full pipeline.
+estimate_migration <- function(migration_data,
+                               migration_model = "migration_fast",
+                               max_attempts_mig = 10,
+                               target_div_pct_mig = 1.0,
+                               target_rhat_pct_mig = 1.0,
+                               chains_mig = 4,
+                               iter_sampling_mig = 1000,
+                               iter_warmup_mig = 1000,
+                               max_treedepth_mig = 12,
+                               refresh_mig = 200,
                                par = parallel::detectCores() - 2){
   tictoc::tic("migration estimation")
+
+
+  model <- migration_model; max_attempts <- max_attempts_mig;
+  target_div_pct <- target_div_pct_mig; target_rhat_pct <- target_rhat_pct_mig
+  chains <- chains_mig; iter_sampling <- iter_sampling_mig; iter_warmup <- iter_warmup_mig
+  max_treedepth <- max_treedepth_mig; refresh <- refresh_mig
+  data <- migration_data
+
+  rm(migration_model, max_attempts_mig, target_div_pct_mig, target_rhat_pct_mig,
+     chains_mig, iter_sampling_mig, iter_warmup_mig, max_treedepth_mig, refresh_mig,
+     migration_data)
 
   ## ---- Stan model -- swap by uncommenting (both consume the same data) ----
   ##   migration_fast.stan -- Petkova-centered combination (default)
@@ -503,23 +588,23 @@ estimate_migration <- function(data,
   return(Migration)
 }
 
-#' Run the core STAN model to estimate genotype-environment association with
-#' likelihoods.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use or when partial re-runs are needed.
-#'
 #' @export
+#' @describeIn mechGEA Run the Bayesian mechanistic GEA model. Consider running with \code{\link{mechGEA}} for the full pipeline.
 run_stan_GEA_model <- function(stan_data,
                                migration_results,
                                k_sd = 4,
                                p0 = 20,
-                               refresh = 100,
-                               chains = 2,
-                               iter_warmup = 250,
-                               iter_sampling = 500,
+                               refresh_gea = 100,
+                               chains_gea = 2,
+                               iter_warmup_gea = 250,
+                               iter_sampling_gea = 500,
                                seed = 42,
                                par = parallel::detectCores() - 2){
+
+  refresh <- refresh_gea; chains <- chains_gea; iter_warmup <- iter_warmup_gea
+  iter_sampling <- iter_sampling_gea
+  rm(refresh_gea, chains_gea, iter_warmup_gea, iter_sampling_gea)
+
   tictoc::tic("estimating Stan time")
 
   ##   migration_fast.stan -- Petkova-centered combination (default)
@@ -636,12 +721,8 @@ run_stan_GEA_model <- function(stan_data,
 
 }
 
-#' Estimate effective sample sizes.
-#'
-#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
-#' for internal use or when partial re-runs are needed.
-#'
 #' @export
+#' @describeIn mechGEA Estimate effective sample sizes for data for \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 estimate_neff <- function(stan_data){
   tictoc::tic("estimating Neff time")
 
@@ -753,6 +834,7 @@ estimate_neff <- function(stan_data){
 }
 
 #' @export
+#' @describeIn mechGEA Calculate parameter summaries from a \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 beta_summary <- function(beta_draw, nloci, nenv){
   beta_summary <- summarise_draws_parallel(beta_draw)
   saveRDS(beta_summary, "files/4_beta_summary.RDS")
