@@ -79,15 +79,15 @@ stopifnot(identical(colnames(likelihoods), patch_info$ind_id))
 meta <- read.csv(
   "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/GEA/BCRF_full_meta_table_propnames.csv"
 ) %>%
-  rename(ind_id = sample_name)
+  rename(sample_name = BGP_ID)
 
 patches_xy <- indv %>%
   filter(set == "current") %>%
   select(sample_name, Population) %>%
-  rename(ind_id = sample_name, patch = Population) %>%
+  rename(patch = Population) %>%
   left_join(
-    meta %>% select(ind_id, Lat, Long),
-    by = "ind_id"
+    meta %>% select(sample_name, Lat, Long),
+    by = "sample_name"
   ) %>%
   group_by(patch) %>%
   summarise(
