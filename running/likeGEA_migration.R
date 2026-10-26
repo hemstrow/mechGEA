@@ -98,7 +98,7 @@ Migration <- migration(
   Phred = likelihoods,
   patch_info = patch_info,
   patches_xy = patches_xy,
-  migration_loci = 50000,
+  migration_loci = 10000,
   N_sim_mig = 100,
   chains_mig = 4,
   cores_mig = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "8"))
