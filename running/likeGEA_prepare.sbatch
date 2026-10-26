@@ -82,7 +82,7 @@ Rscript likeGEA_chunks.R
 #------------------
 # Count chunks
 
-chunk_dir="$beagle_path/likeGEA_chunks"
+chunk_dir="$beagle_path/likeGEA_chunks_3"
 
 nchunks=$(find "$chunk_dir" -maxdepth 1 \
     -name 'chunk_*.beagle.gz' | wc -l)
