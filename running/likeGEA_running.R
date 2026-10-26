@@ -57,7 +57,10 @@ colnames(likelihoods) <- beagle_ids
 message("Loaded ", nrow(likelihoods), " loci and ",
         ncol(likelihoods), " individuals")
 
-indv <- fread(file.path(root, "lc_pipe/docs/hBCRF.locopipe.norep.noPP.noLP.three_sets.txt"))
+indv <- as.data.frame(
+  fread(file.path(root, "lc_pipe/docs/hBCRF.locopipe.norep.noPP.noLP.three_sets.txt"))
+)
+
 # IMPORTANT: Ind IDs count every row in the ORIGINAL metadata, before filtering.
 patch_info <- indv %>%
   mutate(beagle_id = paste0("Ind", row_number())) %>%

@@ -6,7 +6,7 @@
 #SBATCH --time=00:10:00
 #SBATCH --qos=cpu-normal
 #SBATCH --partition=acpu
-#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-type=START,END,FAIL
 #SBATCH  --mail-user=ericacnr@colostate.edu
 
 source ~/.bashrc
