@@ -118,10 +118,10 @@ prepare_gea_data <- function(Phred, patch_info, patches_xy, env,
   Phred[] <- values
   rm(values, valid)
   
-  gl_all <- phred_to_loglik(Phred)
+  gl_all <- likeGEA:::phred_to_loglik(Phred)
   rm(Phred)
-  eff <- compute_N_eff_G_eff_gl(gl_all, N_table = N_table)
-  bb <- compute_BetaBin_theta_gl(gl_all, N_table)
+  eff <- likeGEA:::compute_N_eff_G_eff_gl(gl_all, N_table = N_table)
+  bb <- likeGEA:::compute_BetaBin_theta_gl(gl_all, N_table)
   G_eff <- eff$G_eff
   G_eff[is.na(G_eff)] <- 0
   
@@ -160,6 +160,7 @@ run_stan_GEA_model <- function(stan_data,
   
   ##   migration_fast.stan -- Petkova-centered combination (default)
   ##   migration_M3b.stan  -- joint (pi_off, pi_diag) fit with diagonal anchor
+  .source_model <- getFromNamespace(".source_model", "likeGEA")
   STAN_MODEL <- .source_model("structured.stan")
   if(!dir.exists("./stan")){dir.create("stan")}
   
@@ -186,7 +187,7 @@ run_stan_GEA_model <- function(stan_data,
   
   ## ---- Write data include file ----------------------------------------------
   
-  write_common_data_stan(
+  likeGEA:::write_common_data_stan(
     as.matrix(data$Env),
     as.matrix(Migration),
     data$k_sd,
@@ -262,16 +263,16 @@ run_stan_GEA_model <- function(stan_data,
   tau_draw <- fit$draws(variables = c("Tau"), format = "draws_matrix")
   saveRDS(tau_draw, "files/4_tau_draw.RDS")
   
-  beta_summary <- summarise_draws_parallel(beta_draw)
+  beta_summary <- likeGEA:::summarise_draws_parallel(beta_draw)
   saveRDS(beta_summary, "files/4_beta_summary.RDS")
   
-  mlog_p <- score_stan(beta_draw, data$N_locus, data$N_env)
+  mlog_p <- likeGEA:::score_stan(beta_draw, data$N_locus, data$N_env)
   saveRDS(mlog_p, "files/4_mlog_p.RDS")
   
   cat("Saved files/4_{rho_kappa_mu_draw, beta_draw, tau_draw,",
       "beta_summary, mlog_p}.RDS\n")
   
-  tictoc::toc(quiet = FALSE, func.toc = toc_hours)
+  tictoc::toc(quiet = FALSE, func.toc = likeGEA:::toc_hours)
   
   return(list(rho_kappa_mu = rho_kappa_mu,
               beta_draw = beta_draw,

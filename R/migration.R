@@ -114,15 +114,15 @@ prepare_mig_data <- function(Phred, individuals, coordinates,
                 migration_loci, N_locus, N_patch))
     cat("Converting selected Phred scores to genotype likelihoods ...\n")
   }
-  gl_migration <- phred_to_loglik(Phred_mig)
+  gl_migration <- likeGEA:::phred_to_loglik(Phred_mig)
   rm(Phred_mig)
   
   set.seed(seed + 1L)
   pi_off_sum <- matrix(0, N_patch, N_patch)
   pi_diag_sum <- numeric(N_patch)
   for (s in seq_len(N_sim)) {
-    geno_s <- genotype_from_gl(gl_migration)
-    pi_s <- compute_pi_genotype(geno_s, N_table)
+    geno_s <- likeGEA:::genotype_from_gl(gl_migration)
+    pi_s <- likeGEA:::compute_pi_genotype(geno_s, N_table)
     pi_off_sum <- pi_off_sum + pi_s$pi_off
     pi_diag_sum <- pi_diag_sum + pi_s$pi_diag
     if (verbose && (s %% 10L == 0L || s == N_sim))
@@ -180,7 +180,7 @@ estimate_migration <- function(data,
   if (!is.finite(scale_sd) || scale_sd <= 0)
     stop("Cannot standardize geographic distances.")
   DistM_std <- data$DistM / scale_sd
-  covariates <- matrix(convert_T_to_t(DistM_std), ncol = 1)
+  covariates <- matrix(likeGEA:::convert_T_to_t(DistM_std), ncol = 1)
   if (any(!is.finite(covariates)))
     stop("Migration covariates contain missing or non-finite values.")
   
@@ -192,7 +192,7 @@ estimate_migration <- function(data,
   
   threads_per_chain <- max(1L, floor(cores / chains))
   dat <- list(
-    pi_off = convert_T_to_t(data$pi_off),
+    pi_off = likeGEA:::convert_T_to_t(data$pi_off),
     pi_diag = data$pi_diag,
     covariates = covariates,
     N_cov = 1L,
