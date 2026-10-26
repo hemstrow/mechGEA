@@ -3,9 +3,9 @@
 plot_migration <- function(migration_results, migration_data, patches_xy,
                            mig_plot_threshold = 0.4,
                            mig_plot_topn = 2,
-                           mig_plot_bin_size = 1){
+                           mig_plot_binsize = 1){
 
-  data <- migration_data; rm(migration(data))
+  data <- migration_data; rm(migration_data)
   DistM <- data$DistM
   M <- migration_results; rm(migration_results)
 
@@ -54,8 +54,8 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
            mid_lat = (lat_from + lat_to) / 2)
 
   migration_lines <- migration_lines |>
-    dplyr::mutate(mid_lon_bin = round(mid_lon / mig_plot_bin_size) * mig_plot_bin_size,
-           mid_lat_bin = round(mid_lat / mig_plot_bin_size) * mig_plot_bin_size)
+    dplyr::mutate(mid_lon_bin = round(mid_lon / mig_plot_binsize) * mig_plot_binsize,
+           mid_lat_bin = round(mid_lat / mig_plot_binsize) * mig_plot_binsize)
 
   migration_lines <- migration_lines |>
     dplyr::group_by(mid_lon_bin, mid_lat_bin) |>
@@ -210,43 +210,35 @@ plot_gea <- function(stan_data,
   ymin <- min(beta_Mlogp, na.rm = TRUE)
   ymax <- max(c(beta_Mlogp, -log(1 - CI) + 1), na.rm = TRUE) + 1
 
-  pdf("plot/manhattan.pdf", width = 10, height = 5)
-  op <- par(mai = c(0.9, 0.9, 0.5, 0.3))
+  mbMlogp <- as.data.table(beta_Mlogp)
+  mbMlogp[,SNP := 1:.N]
+  mbMlogp <- melt(mbMlogp, id.vars = "SNP")
+  p_man <- ggplot2::ggplot(mbMlogp) +
+    ggplot2::geom_point(ggplot2::aes(x = SNP, y = value),
+                        color = "grey70", size = .5) +
+    ggplot2::xlab("Locus index (candidate set)") +
+    ggplot2:: ylab(bquote(-log(p[th])))
 
-  plot(NA, xlim = c(1, data$N_locus), ylim = c(ymin, ymax),
-       xaxs = "i", yaxs = "i",
-       xlab = "Locus index (candidate set)",
-       ylab = expression(-log(p[th])))
+  if(nrow(inferred) > 0L) {
+    inferred[,Env := match(Env_var, env_names)]
+    inferred[,beta := beta_Mlogp[cbind(inferred$Locus, inferred$Env)]]
+    inferred[,color := env_colors[inferred$Env_var]]
 
-  ## background: every (locus, env) point as small grey dot
-  for (e in seq_len(data$N_env)) {
-    points(seq_len(data$N_locus), beta_Mlogp[, e],
-           cex = 0.5, col = "grey70", pch = 16)
+    p_man <- p_man +
+      ggplot2::geom_point(data = inferred,
+                          ggplot2::aes(x = Locus, y = beta, color = as.character(Env)),
+                          size = 2, inherit.aes = FALSE) +
+      ggplot2::scale_color_manual(breaks = unique(as.character(inferred$Env)),
+                                  values = unique(inferred$color)) +
+      ggplot2::guides(color = ggplot2::guide_legend("Env"))
+    inferred$Env <- inferred$beta <- inferred$color <- NULL
   }
 
-  ## inferred adaptive loci as filled colored dots
-  if (nrow(inferred) > 0L) {
-    inferred[, Env := match(Env_var, env_names)]
-    inf_y   <- beta_Mlogp[cbind(inferred$Locus, inferred$Env)]
-    inf_col <- env_colors[inferred$Env_var]
-    points(inferred$Locus, inf_y, pch = 21, bg = inf_col,
-           col = "black", cex = 1.3)
-  }
+  p_man <- p_man + ggplot2::geom_hline(yintercept = -log(1 - CI),
+                                       color = "grey30", inherit.aes = FALSE) +
+    ggplot2::theme_bw()
 
-  ## threshold line
-  abline(h = -log(1 - CI), lty = 1, lwd = 2, col = "grey30")
-
-  ## env color legend
-  legend("topright",
-         legend = gsub("_", " ", env_names),
-         pt.bg  = env_colors[env_names],
-         col    = "black", pch = 21,
-         cex    = 0.85, box.lty = 0, bg = NA,
-         title  = "env variable")
-
-  par(op)
-  dev.off()
-  cat("Saved: plot/manhattan.pdf\n")
+  ggplot2::ggsave("plot/manhattan.pdf", width = 10, height = 5)
 
   ## ============================================================================
   ## MIGRATION-SELECTION BALANCE for inferred adaptive loci

@@ -41,8 +41,10 @@
 #' @param max_attempts_mig integer, default 10. Number of times to try
 #'   fitting the migration model. If the model does not converge after
 #'   \code{max_attempts_mig} tries, the best fit model will be used.
-#' @param target_div_pct_mig numeric, default 1. NIKUNJ HERE PLEASE!
-#' @param target_rhat_pct_mig numeric, default 1. NIKUNJ HERE PLEASE!
+#' @param target_div_pct_mig numeric, default 1. Maximum percentage of
+#'   divergences allowed during migration model fitting.
+#' @param target_rhat_pct_mig numeric, default 1. Maximum rhat allowed during
+#'   migration model fitting.
 #' @param chains_mig integer, default 4. Number of chains to run for the
 #'   Bayesian migration model fitting.
 #' @param iter_sampling_mig integer, default 1000. Number of sampling iterations
@@ -147,18 +149,18 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                           refresh_mig, mig_plot_topn, .type = "scalar NONA integer")
   dreamerr::check_set_arg(chains_gea, refresh_gea, iter_warmup_gea,
                           iter_sampling_gea, par, .type = "scalar integer")
-  dreamerr::check_set_value(plotting_CI, .type = "scalar NONA numeric GE{0} LT{1}")
+  dreamerr::check_set_value(CI, .type = "scalar NONA numeric GE{0} LT{1}")
   dreamerr::check_set_arg(p0, k_sd, .type = "scalar NONA numeric")
 
 
   msg <- character()
   # env
   sds <- matrixStats::colSds(as.matrix(env[,!colnames(env) == "patch"]))
-  if(any(round(sds), 3) != 1){
+  if(any(round(sds, 3) != 1)){
     msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column standard deviations are not 1.")
   }
   cmeans <- matrixStats::colMeans2(as.matrix(env[,!colnames(env) == "patch"]))
-  if(any(round(cmeans), 3) != 0){
+  if(any(round(cmeans, 3) != 0)){
     msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column means are not 0.")
   }
 
@@ -171,7 +173,7 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                              patch_info = patch_info,
                              patches_xy = patches_xy, env = env,
                              migration_loci = migration_loci,
-                             N_sim = N_sim_mig,
+                             N_sim_mig = N_sim_mig,
                              seed = seed)
 
   #=====================2_estimate_migration========
@@ -248,7 +250,7 @@ prepare_mig_data <- function(Phred, patch_info, patches_xy, env, migration_loci,
 
   individuals <- patch_info; coordinates <- patches_xy; env_data <- env
   N_sim <- N_sim_mig
-  rm(patch_info, patches_xy, env, N_sim)
+  rm(patch_info, patches_xy, env, N_sim_mig)
 
 
 
@@ -658,7 +660,7 @@ run_stan_GEA_model <- function(stan_data,
     cpp_options     = list(USER_HEADER = hpp_file, stan_threads = TRUE),
     stanc_options   = list("allow-undefined" = TRUE),
     include_paths   = normalizePath("stan"),
-    force_recompile = FALSE
+    force_recompile = TRUE
   )
 
   ## ---- Sample ---------------------------------------------------------------

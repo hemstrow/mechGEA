@@ -11,8 +11,8 @@ beagle2pl(file, lines = NULL, ind_order = NULL, ind_names = NULL)
 the raw data.}
 
 \item{lines}{numeric, default NULL. Optional vector of numbers noting which
-lines in the beagle file to keep. This mut be sequential due to
-\code{\link[data.table]{fread}}'s restirctions.}
+lines in the beagle file to keep. This must be sequential due to
+\code{\link[data.table]{fread}}'s restrictions.}
 
 \item{ind_order}{numeric, default NULL. Numeric vector indicating final
 sorted order to use for individuals the output matrix (\code{c(2,1,3)}, for
@@ -21,9 +21,8 @@ first individual second, and then the third individual last in the final
 matrix, for example). If NULL, the order will be unchanged.}
 
 \item{ind_names}{character, default NULL. Names for individuals in the final
-matrix. If \code{ind_order} is provided, this should match the final order
-dictated by \code{ind_order}; otherwise, this should match the order
-in \code{file}.}
+matrix. If \code{ind_order} is provided, this should match the initial
+order of sample names, not the final order.}
 }
 \value{
 A \eqn{p \times n} matrix, where p is the number of loci and n is

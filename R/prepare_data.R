@@ -19,17 +19,16 @@
 #' @param file character. File path to the beagle or beagle.gz file containing
 #'   the raw data.
 #' @param lines numeric, default NULL. Optional vector of numbers noting which
-#'   lines in the beagle file to keep. This mut be sequential due to
-#'   \code{\link[data.table]{fread}}'s restirctions.
+#'   lines in the beagle file to keep. This must be sequential due to
+#'   \code{\link[data.table]{fread}}'s restrictions.
 #' @param ind_order numeric, default NULL. Numeric vector indicating final
 #'   sorted order to use for individuals the output matrix (\code{c(2,1,3)}, for
 #'   example, would put the second individual in \code{file} first, then the
 #'   first individual second, and then the third individual last in the final
 #'   matrix, for example). If NULL, the order will be unchanged.
 #' @param ind_names character, default NULL. Names for individuals in the final
-#'   matrix. If \code{ind_order} is provided, this should match the final order
-#'   dictated by \code{ind_order}; otherwise, this should match the order
-#'   in \code{file}.
+#'   matrix. If \code{ind_order} is provided, this should match the initial
+#'   order of sample names, not the final order.
 #'
 #' @return A \eqn{p \times n} matrix, where p is the number of loci and n is
 #'   the number of individuals. See details for format.
@@ -79,12 +78,14 @@ beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 
   dfinal[dfinal == "0,0,0"] <- "."
 
+  # names
+  if(!is.null(ind_names)){
+    colnames(dfinal) <- ind_names
+  }
+
   # reorganize if requested
   if(!is.null(ind_order)){
     dfinal <- dfinal[,ind_order]
-  }
-  if(!is.null(ind_names)){
-    colnames(dfinal) <- ind_names
   }
 
   return(dfinal)
@@ -228,7 +229,9 @@ prepare_metadata <- function(sample_meta,
   targets <- targets[targets %notin% c("patch", "ind_id", "geometry")]
   if(env_mean_method == "unweighted"){
     envs <- dt[,lapply(.SD, mean), by = patch, .SDcols = targets]
-    envs <- envs[,..targets]
+    ptchs <- envs$patch
+    targets <- c("patch", targets)
+    .fix..call(envs <- envs[,..targets])
   } else if(env_mean_method == "weighted"){ # for weighted (idw); relies on gstat
     envs <- copy(patch_xy)[,1]
     for(i in targets) envs[[i]] <- 0

@@ -1,10 +1,22 @@
 gl <- example_gl$likelihoods
 
-fl <- phred_to_loglik(gl)
+fl <- strsplit(gl, ",")
+fl1 <- unlist(lapply(fl, function(x) 10^((-1*as.numeric(x[1]))/10)))
+fl2 <- unlist(lapply(fl, function(x) 10^((-1*as.numeric(x[2]))/10)))
+fl3 <- unlist(lapply(fl, function(x) 10^((-1*as.numeric(x[3]))/10)))
 
-fl1 <- fl[,,1]
-fl2 <- fl[,,2]
-fl3 <- fl[,,3]
+fl <- cbind(fl1, fl2, fl3)
+fl <- fl/rowSums(fl)
+
+
+
+all(which(is.na(fl[,1])) == which(rowSums(is.na(fl)) == 3))
+fl[is.na(fl)] <- 1/3
+
+
+fl1 <- matrix(fl[,1], nrow = nrow(gl))
+fl2 <- matrix(fl[,2], nrow = nrow(gl))
+fl3 <- matrix(fl[,3], nrow = nrow(gl))
 
 
 fl <- cbind(fl1, fl2, fl3)

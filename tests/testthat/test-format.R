@@ -79,3 +79,24 @@ test_that("env pruning",{
 
 
 })
+
+test_that("beagle2pl",{
+
+  # since the example beagle was made by converting the pl example into a beagle, we can do a return-trip test for formatting.
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  pl <- beagle2pl(beagle, ind_names = colnames(example_gl$likelihoods))
+
+  expect_equal(pl, example_gl$likelihoods, ignore_attr = TRUE)
+  expect_equal(colnames(pl), colnames(example_gl$likelihoods))
+
+  # test nline selection
+  pl <- beagle2pl(beagle, ind_names = colnames(example_gl$likelihoods), lines = 1:100)
+  expect_equal(pl, example_gl$likelihoods[1:100,], ignore_attr = TRUE)
+  expect_equal(colnames(pl), colnames(example_gl$likelihoods))
+
+  # test re-ordering
+  pl <- beagle2pl(beagle, ind_names = colnames(example_gl$likelihoods), ind_order = c(101:200, 1:100))
+  expect_equal(pl, example_gl$likelihoods[,c(101:200, 1:100)], ignore_attr = TRUE)
+  expect_equal(colnames(pl), colnames(example_gl$likelihoods)[c(101:200, 1:100)])
+
+})
