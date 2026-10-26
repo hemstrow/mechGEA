@@ -13,6 +13,14 @@ if (length(args) != 1L || !grepl("^[0-9]+$", args[1]))
   stop("Supply one zero-based chunk index: Rscript likeGEA_running.R 0")
 task_id <- as.integer(args[1])
 
+# Source alongside this R script, regardless of SLURM's launch directory.
+source("../R/likeGEA_no_mig.R")
+
+# If likeGEA's internal Stan asset helper is not exported, obtain it explicitly.
+if (!exists(".source_model", mode = "function")) {
+  .source_model <- getFromNamespace(".source_model", "likeGEA")
+}
+
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
 chunk_dir <- file.path(base, "likeGEA_chunks_3")

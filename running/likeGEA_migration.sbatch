@@ -13,11 +13,23 @@
 source ~/.bashrc
 conda activate R
 
+migration_file="/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/GEA/likeGEA_results/migration/Migration_shared.RDS"
+rm -f "$migration_file"
+
 echo "Running migration estimation..."
 
 Rscript likeGEA_migration.R
 
-echo "Migration completed successfully."
+#------------------
+# Check migration completed successfully
+
+if [[ ! -s "$migration_file" ]]; then
+    echo "ERROR: Migration_shared.RDS does not exist or is empty."
+    echo "Migration failed. GEA array will NOT be submitted."
+    exit 1
+fi
+
+echo "Migration output found: $migration_file"
 
 #------------------
 # Submit GEA array
