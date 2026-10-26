@@ -1,7 +1,7 @@
 #!/bin/bash -l
 
 #SBATCH -t 2-24:00:00
-#SBATCH -J likeGEA
+#SBATCH -J mechGEA
 #SBATCH --array=1-ARRAY_REPLACE
 #SBATCH --mem=100G
 #SBATCH -n 40
@@ -22,11 +22,11 @@
 #     activate some modules (like conda/mamba).
 #
 # As noted in the example_slurm_job() function documentation, this all assumes
-# that a correct likeGEA conda environment is set-up and ready-to-use. The
+# that a correct mechGEA conda environment is set-up and ready-to-use. The
 # package's "setup_likeGEA_env" function is a good way to acheive this without
 # versioning/compilation errors.
 #
-# Remember that likeGEA can automatically partition/split beagle files for you
+# Remember that mechGEA can automatically partition/split beagle files for you
 # with the "get_chunks()" function. You can make a list of these files with
 # "ls FILES*.beagle.gz > beagle_list.txt" where FILES is your file prefix.
 #

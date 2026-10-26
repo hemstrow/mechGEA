@@ -3,13 +3,13 @@
 \name{example_slurm_job}
 \alias{example_slurm_job}
 \title{Generate an example SLURM array job script and handlers to run
-\code{\link{likeGEA}} on a SLURM HPC.}
+\code{\link{mechGEA}} on a SLURM HPC.}
 \usage{
 example_slurm_job(
   beagle_files,
   sample_metadata,
   output_dir = ".",
-  conda_env = "likeGEA",
+  conda_env = "mechGEA",
   control_file_prefix = "./control/",
   env_mean_method = "unweighted",
   ...
@@ -21,16 +21,16 @@ files to run. These will be formatted to phred files for running by the
 generated SLURM script for more effective parallelization.}
 
 \item{sample_metadata}{either a named list of data.framescontaining the
-needed metadata in the correct format expected by \code{\link{likeGEA}}
+needed metadata in the correct format expected by \code{\link{mechGEA}}
 (see \code{\link{example_gl}}, although the \code{$likelihoods} object is
 not needed.) or an input \code{\link[sf]{sf}} object like
 \code{\link{sample_metadata}}.}
 
 \item{output_dir}{character, default ".". A path to the director where final
-\code{\link{likeGEA}} outputs will be stored in named sub-directories for
+\code{\link{mechGEA}} outputs will be stored in named sub-directories for
 each file in \code{beagle_files}.}
 
-\item{conda_env}{character, default likeGEA. A named \code{conda} environment
+\item{conda_env}{character, default mechGEA. A named \code{conda} environment
 to load at the start of the script. Note that if a conda module etc. needs
 to be loaded for this env to load, the resulting SLURM array-job shell
 script must be modified. See \code{\link{setup_likeGEA_env}} for help
@@ -44,7 +44,7 @@ located. Either a directory ending in "/" or a file basename prefix.}
 mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
 See \code{\link{prepare_metadata}} for details and options.}
 
-\item{...}{additional arguments passed to \code{\link{likeGEA}}.}
+\item{...}{additional arguments passed to \code{\link{mechGEA}}.}
 }
 \description{
 Please note: the resulting shell script, located in the \code{output_dir}

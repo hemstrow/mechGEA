@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(likeGEA)
+library(mechGEA)
 
-test_check("likeGEA")
+test_check("mechGEA")

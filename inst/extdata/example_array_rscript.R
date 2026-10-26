@@ -1,4 +1,4 @@
-library(likeGEA); library(data.table); library(sf)
+library(mechGEA); library(data.table); library(sf)
 args <- commandArgs(TRUE)
 beagle <- as.character(args[1])
 meta <- readRDS(as.character(args[2]))
@@ -38,4 +38,4 @@ like_args <- c(list(Phred = Phred,
                     env = meta$env),
                parms)
 
-results <- do.call(likeGEA, like_args)
+results <- do.call(mechGEA, like_args)

@@ -13,17 +13,17 @@ knitr::opts_chunk$set(
 )
 ```
 
-# likeGEA
+# mechGEA
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-The current version of this readme is for the developers, describing the overall scheme by which the package is set up. A typical user will do the following to run likeGEA:
+The current version of this readme is for the developers, describing the overall scheme by which the package is set up. A typical user will do the following to run mechGEA:
 
 1. Run the `get_chunks()` function to determine chunks of the input beagle file to run.
 2. Run the `prepare_metadata()` function to either save their metadata in the correct locations or reformat a raw input metadata and paths to environmental rasters appropriately.
 3. Optionally fetch and re-code the script provided by `example_array_script()` to make a script which will run all chunks on a cluster.
-4. Run the pipeline for each chunk either by hand or ideally with a scheduler script using the `likeGEA` function.
+4. Run the pipeline for each chunk either by hand or ideally with a scheduler script using the `mechGEA` function.
 
 ## Step 1: Data prep.
 
@@ -107,13 +107,13 @@ This is all that is all that the user is required to do to prepare to run.
 
 ## Step 2: Running the pipeline.
 
-The user then runs the function `likeGEA()` to execute the pipeline. This function needs a selected snp list (like those made by `get_chunks()`) and a path to a directory containing the raw input data including the genotypes (the raw beagle genotypes, specified by name by the user OR a single PL object produced with the already subset and formatted loci) and the three metadata files described above. This runs the pipeline on *a single batch of loci*. It is up to the user to run all of the seperate batches, although an example slurm-array oriented shell script is provided and can be fetched using the `example_array_script()` function. Users with other schedulers will need to make their own, although we can put a suggestion to provide examples for inclusion in the documentation for the latter function.
+The user then runs the function `mechGEA()` to execute the pipeline. This function needs a selected snp list (like those made by `get_chunks()`) and a path to a directory containing the raw input data including the genotypes (the raw beagle genotypes, specified by name by the user OR a single PL object produced with the already subset and formatted loci) and the three metadata files described above. This runs the pipeline on *a single batch of loci*. It is up to the user to run all of the seperate batches, although an example slurm-array oriented shell script is provided and can be fetched using the `example_array_script()` function. Users with other schedulers will need to make their own, although we can put a suggestion to provide examples for inclusion in the documentation for the latter function.
 
 ## Installation
 
-You can install the development version of likeGEA from [GitHub](https://github.com/) with:
+You can install the development version of mechGEA from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
-pak::pak("hemstrow/likeGEA")
+pak::pak("hemstrow/mechGEA")
 ```

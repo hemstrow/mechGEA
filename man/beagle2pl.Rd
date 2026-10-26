@@ -31,7 +31,7 @@ the number of individuals. See details for format.
 }
 \description{
 Takes a beagle formatted input file and converts it to a matrix of phred-
-scaled likelihoods, as needed by \code{likeGEA}. See details.
+scaled likelihoods, as needed by \code{mechGEA}. See details.
 }
 \details{
 The input file format required by this package has one row for each locus and
@@ -50,7 +50,7 @@ as produced by something like \code{ANGSD}'s \code{doGlf}.
 \examples{
 # example code
 
-beagle <- system.file("extdata", "example.beagle.gz", package = "likeGEA")
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
 pl <- function(beagle,
                lines = 1:100) # first 100 lines
 

@@ -2,13 +2,13 @@
 % Please edit documentation in R/env_setup.R
 \name{setup_likeGEA_env}
 \alias{setup_likeGEA_env}
-\title{Set-up a conda environment with all \code{likeGEA} dependencies properly
+\title{Set-up a conda environment with all \code{mechGEA} dependencies properly
 installed.}
 \usage{
-setup_likeGEA_env(name = "likeGEA", conda_path = "DEFAULT")
+setup_likeGEA_env(name = "mechGEA", conda_path = "DEFAULT")
 }
 \description{
-Set-up a conda environment with all \code{likeGEA} dependencies properly
+Set-up a conda environment with all \code{mechGEA} dependencies properly
 installed.
 }
 \author{

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# likeGEA
+# mechGEA
 
 <!-- badges: start -->
 
@@ -9,7 +9,7 @@
 
 The current version of this readme is for the developers, describing the
 overall scheme by which the package is set up. A typical user will do
-the following to run likeGEA:
+the following to run mechGEA:
 
 1.  Run the `get_chunks()` function to determine chunks of the input
     beagle file to run.
@@ -20,7 +20,7 @@ the following to run likeGEA:
     `example_array_script()` to make a script which will run all chunks
     on a cluster.
 4.  Run the pipeline for each chunk either by hand or ideally with a
-    scheduler script using the `likeGEA` function.
+    scheduler script using the `mechGEA` function.
 
 ## Step 1: Data prep.
 
@@ -124,7 +124,7 @@ run.
 
 ## Step 2: Running the pipeline.
 
-The user then runs the function `likeGEA()` to execute the pipeline.
+The user then runs the function `mechGEA()` to execute the pipeline.
 This function needs a selected snp list (like those made by
 `get_chunks()`) and a path to a directory containing the raw input data
 including the genotypes (the raw beagle genotypes, specified by name by
@@ -139,10 +139,10 @@ for inclusion in the documentation for the latter function.
 
 ## Installation
 
-You can install the development version of likeGEA from
+You can install the development version of mechGEA from
 [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
-pak::pak("hemstrow/likeGEA")
+pak::pak("hemstrow/mechGEA")
 ```

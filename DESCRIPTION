@@ -1,4 +1,4 @@
-Package: likeGEA
+Package: mechGEA
 Title: Bayesian Genotype-Environment Association Analyses with Likelihoods.
 Version: 0.0.0.9000
 Authors@R: 

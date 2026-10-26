@@ -14,6 +14,6 @@ plot_migration(
 )
 }
 \description{
-Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 for internal use or when partial re-runs are needed.
 }

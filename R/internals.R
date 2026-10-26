@@ -498,5 +498,5 @@ toc_hours <- function(tic, toc, msg) {
 
 
 .source_model <- function(model_name){
-  system.file("stan", model_name, package = "likeGEA")
+  system.file("stan", model_name, package = "mechGEA")
 }

@@ -1,11 +1,11 @@
-#' Set-up a conda environment with all \code{likeGEA} dependencies properly
+#' Set-up a conda environment with all \code{mechGEA} dependencies properly
 #' installed.
 #'
 #' @author Eric Robertson
 #' @author William Hemstrom
 #'
 #' @export
-setup_likeGEA_env <- function(name = "likeGEA", conda_path = "DEFAULT"){
+setup_likeGEA_env <- function(name = "mechGEA", conda_path = "DEFAULT"){
 
   if(conda_path == "DEFAULT"){
     if(tryCatch(!file.exists(reticulate::conda_binary()), error = function(e) FALSE)){
@@ -113,7 +113,7 @@ setup_likeGEA_env <- function(name = "likeGEA", conda_path = "DEFAULT"){
       cmd_line = paste0("Rscript -e ", shQuote('cmdstanr::check_cmdstan_toolchain()')),
       envname = name)
 
-    #============install likeGEA============
+    #============install mechGEA============
     remotes_inst <- 'install.packages("remotes", repos = c("https://cloud.r-project.org"))'
     remotes_inst <- paste("Rscript -e", shQuote(remotes_inst))
 
@@ -121,7 +121,7 @@ setup_likeGEA_env <- function(name = "likeGEA", conda_path = "DEFAULT"){
       cmd_line = remotes_inst,
       envname = name)
 
-    likeGEA_inst <- 'remotes::install_github("hemstrow/likeGEA", dependencies = FALSE)' # need to NOT install rstan.
+    likeGEA_inst <- 'remotes::install_github("hemstrow/mechGEA", dependencies = FALSE)' # need to NOT install rstan.
     likeGEA_inst <- paste("Rscript -e", shQuote(likeGEA_inst))
 
     reticulate::conda_run2(

@@ -1,7 +1,7 @@
 #' Format a beagle file as phred-scaled likelihoods.
 #'
 #' Takes a beagle formatted input file and converts it to a matrix of phred-
-#' scaled likelihoods, as needed by \code{likeGEA}. See details.
+#' scaled likelihoods, as needed by \code{mechGEA}. See details.
 #'
 #' The input file format required by this package has one row for each locus and
 #' one column for each individual. Phred-scaled likelihoods (PL) for the three
@@ -41,7 +41,7 @@
 #' @examples
 #' # example code
 #'
-#' beagle <- system.file("extdata", "example.beagle.gz", package = "likeGEA")
+#' beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
 #' pl <- function(beagle,
 #'                lines = 1:100) # first 100 lines
 #'

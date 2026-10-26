@@ -1,6 +1,6 @@
 #' Plot migration stan model results.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use or when partial re-runs are needed.
 #'
 #' @export
@@ -160,7 +160,7 @@ plot_migration <- function(M, data, coordinates,
 
 #' Plot migration core stan GEA results.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use or when partial re-runs are needed.
 #'
 #' @export

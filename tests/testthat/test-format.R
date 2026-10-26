@@ -1,7 +1,7 @@
 test_that("get_chunks",{
 
   # correct on linux with gz
-  beagle <- system.file("extdata", "example.beagle.gz", package = "likeGEA")
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   chunk_files <- get_chunks(beagle, 100)
 
   ## ref
@@ -20,7 +20,7 @@ test_that("get_chunks",{
   file.remove(chunk_files)
 
   # correct on linux with non-gz
-  beagle <- system.file("extdata", "example.beagle.gz", package = "likeGEA")
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   file.copy(beagle, "test.beagle.gz")
   system("gunzip test.beagle.gz")
   beagle <- "test.beagle"

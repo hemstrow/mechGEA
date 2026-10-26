@@ -9,7 +9,7 @@
 #'   \code{.beagle} or \code{.beagle.gz} file by \code{\link{beagle2pl}}. See
 #'   \code{\link{example_gl}}\code{$likelihoods} for an example.
 #' @param migration_results list or NULL, default NULL. If provided,
-#'   \code{likeGEA} will use migration results in the list format produced by
+#'   \code{mechGEA} will use migration results in the list format produced by
 #'   \code{\link{estimate_migration}} rather than re-running with the provided
 #'   data. This is useful if you wish to assess migration once with a set of
 #'   loci and then use that assessment for other genomic chunks (see
@@ -24,7 +24,7 @@
 #'
 #' @export
 #' @references Insert Goel et. al. ref here.
-likeGEA <- function(Phred, patch_info, patches_xy, env,
+mechGEA <- function(Phred, patch_info, patches_xy, env,
                     migration_results = NULL,
                     N_sim_mig = 100,
                     migration_loci = 1000,
@@ -161,7 +161,7 @@ likeGEA <- function(Phred, patch_info, patches_xy, env,
 
 #' Prepare migration data for stan.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use.
 #'
 #' @export
@@ -337,7 +337,7 @@ prepare_mig_data <- function(Phred, individuals, coordinates, env_data, migratio
 
 #' Estimate migration rates.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use or when partial re-runs are needed.
 #'
 #' @param model character, default "migration_fast". Choice of model for
@@ -506,7 +506,7 @@ estimate_migration <- function(data,
 #' Run the core STAN model to estimate genotype-environment association with
 #' likelihoods.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use or when partial re-runs are needed.
 #'
 #' @export
@@ -638,7 +638,7 @@ run_stan_GEA_model <- function(stan_data,
 
 #' Estimate effective sample sizes.
 #'
-#' Consider running via \code{\link{likeGEA}} for the full pipeline. Generally
+#' Consider running via \code{\link{mechGEA}} for the full pipeline. Generally
 #' for internal use or when partial re-runs are needed.
 #'
 #' @export
