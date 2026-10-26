@@ -3,7 +3,7 @@ library(data.table)
 library(dplyr)
 library(likeGEA)
 
-source("../R/migration_standalone_updated.R")
+source("../R/migration.R")
 
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 
