@@ -28,7 +28,7 @@ if (!exists(".source_model", mode = "function")) {
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
 chunk_dir <- file.path(base, "likeGEA_chunks")
-result_dir <- file.path(root, "GEA/likeGEA_results")
+result_dir <- file.path(root, "GEA/likeGEA_results_sensativity/posterior_mean")
 migration_file <- file.path(result_dir, "migration/Migration_shared.RDS")
 chunk_file <- file.path(chunk_dir, sprintf("chunk_%03d.beagle.gz", task_id))
 result_file <- file.path(result_dir, sprintf("likeGEA_chunk_%03d.rds", task_id))
