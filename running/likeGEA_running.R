@@ -14,7 +14,11 @@ if (length(args) != 1L || !grepl("^[0-9]+$", args[1]))
 task_id <- as.integer(args[1])
 
 # Source alongside this R script, regardless of SLURM's launch directory.
-source("../R/likeGEA_no_mig.R")
+file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
+script_dir <- if (length(file_arg)) {
+  dirname(normalizePath(sub("^--file=", "", file_arg[1])))
+} else getwd()
+source(file.path(script_dir, "likeGEA_no_mig.R"))
 
 # If likeGEA's internal Stan asset helper is not exported, obtain it explicitly.
 if (!exists(".source_model", mode = "function")) {
@@ -23,8 +27,8 @@ if (!exists(".source_model", mode = "function")) {
 
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
-chunk_dir <- file.path(base, "likeGEA_chunks_3")
-result_dir <- file.path(root, "GEA/likeGEA_results_3")
+chunk_dir <- file.path(base, "likeGEA_chunks")
+result_dir <- file.path(root, "GEA/likeGEA_results")
 migration_file <- file.path(result_dir, "migration/Migration_shared.RDS")
 chunk_file <- file.path(chunk_dir, sprintf("chunk_%03d.beagle.gz", task_id))
 result_file <- file.path(result_dir, sprintf("likeGEA_chunk_%03d.rds", task_id))
@@ -90,3 +94,35 @@ stopifnot(!anyDuplicated(env$patch),
           all(is.finite(env$PAS_tot)))
 
 Migration <- readRDS(migration_file)
+if (is.null(rownames(Migration)) || is.null(colnames(Migration)))
+  stop("The shared migration matrix must have patch row/column names. Re-save the named matrix.")
+if (!setequal(rownames(Migration), patches_xy$patch) ||
+    !setequal(colnames(Migration), patches_xy$patch))
+  stop("Migration matrix patches do not match this chunk's patches.")
+
+# Separate work directory is essential: all jobs write files/ and stan/.
+dir.create(task_dir, recursive = TRUE, showWarnings = FALSE)
+setwd(task_dir)
+message("Working in ", getwd())
+
+cores <- as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "8"))
+if (is.na(cores) || cores < 1L) cores <- 1L
+
+res <- likeGEA_no_mig(
+  Phred = likelihoods,
+  patch_info = patch_info,
+  patches_xy = patches_xy,
+  env = env,
+  migration = Migration,
+  chains_gea = 2,
+  par = cores,
+  run_plot = TRUE,
+  run_neff = TRUE
+)
+
+# Write a completed result only after all requested stages succeed.
+tmp_file <- paste0(result_file, ".", Sys.getpid(), ".tmp")
+saveRDS(res, tmp_file)
+if (!file.rename(tmp_file, result_file))
+  stop("Could not finalize result file: ", result_file)
+message("Completed and saved: ", result_file)
