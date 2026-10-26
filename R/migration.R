@@ -152,6 +152,7 @@ prepare_mig_data <- function(Phred, individuals, coordinates,
 
 # increased the sampling and warm-up to try and get a better fit, and changed 
 # the adapt_delta from the default 0.8 to 0.99 (and adding this as a workable parameter in the fitting)
+# also for the sake of trouble shooting, just doing 1 attempt.
 estimate_migration <- function(data,
                                model = "migration_fast",
                                max_attempts = 1,
