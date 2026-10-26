@@ -2,8 +2,8 @@
 #SBATCH --job-name=likeGEA_run
 #SBATCH --output=likeGEA_run.%A_%a.out
 #SBATCH --error=likeGEA_run.%A_%a.err
-#SBATCH --mem=6G
-#SBATCH --time=00:10:00
+#SBATCH --mem=46G
+#SBATCH --time=23:59:00
 #SBATCH --qos=cpu-normal
 #SBATCH --partition=acpu
 #SBATCH --mail-type=START,END,FAIL
