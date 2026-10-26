@@ -164,7 +164,7 @@ estimate_migration <- function(data,
                                cores = max(1L, parallel::detectCores() - 2L)) {
   
   # Copy the original likeGEA Stan files into ./stan before running.
-  stan_dir <- "/projects/ericacnr@colostate.edu/likeGEA_bebug/likeGEA/"
+  stan_dir <- "/projects/ericacnr@colostate.edu/likeGEA_bebug/likeGEA/stan/"
   
   stan_file <- file.path(stan_dir, paste0(sub("\\.stan$", "", model), ".stan"))
   hpp_file <- file.path(stan_dir, "coalescent_time.hpp")
