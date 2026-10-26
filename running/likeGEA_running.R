@@ -14,22 +14,15 @@ if (length(args) != 1L || !grepl("^[0-9]+$", args[1]))
 task_id <- as.integer(args[1])
 
 # Source alongside this R script, regardless of SLURM's launch directory.
-file_arg <- grep("^--file=", commandArgs(FALSE), value = TRUE)
-script_dir <- if (length(file_arg)) {
-  dirname(normalizePath(sub("^--file=", "", file_arg[1])))
-} else getwd()
-source(file.path(script_dir, "likeGEA_no_mig.R"))
-
-# If likeGEA's internal Stan asset helper is not exported, obtain it explicitly.
-if (!exists(".source_model", mode = "function")) {
-  .source_model <- getFromNamespace(".source_model", "likeGEA")
-}
+source("../R/likeGEA_no_mig.R")
 
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
-chunk_dir <- file.path(base, "likeGEA_chunks")
+chunk_dir <- file.path(base, "likeGEA_chunks_3")
+#representative_draw/ for the other version
+migration_dir <- file.path(root, "GEA/likeGEA_results_3/migration/")
 result_dir <- file.path(root, "GEA/likeGEA_results_sensativity/posterior_mean")
-migration_file <- file.path(result_dir, "migration/Migration_shared.RDS")
+migration_file <- file.path(migration_dir, "Migration_shared.RDS")
 chunk_file <- file.path(chunk_dir, sprintf("chunk_%03d.beagle.gz", task_id))
 result_file <- file.path(result_dir, sprintf("likeGEA_chunk_%03d.rds", task_id))
 task_dir <- file.path(result_dir, sprintf("work_chunk_%03d", task_id))
@@ -44,8 +37,25 @@ if (!file.exists(migration_file)) stop("Shared migration matrix not found: ", mi
 
 # Import the exact individual IDs encoded in the filtered Beagle file.
 message("Loading ", chunk_file)
+
+header <- strsplit(
+  readLines(gzfile(chunk_file), n = 1),
+  "\\s+"
+)[[1]]
+
+# Beagle has 3 columns per individual
+beagle_ids <- header[seq(4, length(header), by = 3)]
+
+# Convert genotype likelihoods
 likelihoods <- beagle2pl(chunk_file)
-message("Loaded ", nrow(likelihoods), " loci and ", ncol(likelihoods), " individuals")
+
+# Restore individual IDs
+stopifnot(ncol(likelihoods) == length(beagle_ids))
+
+colnames(likelihoods) <- beagle_ids
+
+message("Loaded ", nrow(likelihoods), " loci and ",
+        ncol(likelihoods), " individuals")
 
 indv <- fread(file.path(root, "lc_pipe/docs/hBCRF.locopipe.norep.noPP.noLP.three_sets.txt"))
 # IMPORTANT: Ind IDs count every row in the ORIGINAL metadata, before filtering.
@@ -66,11 +76,15 @@ stopifnot(identical(colnames(likelihoods), patch_info$ind_id))
 
 # Geographic coordinates from the original sample IDs, averaged within patch.
 meta <- read.csv(file.path(root, "GEA/BCRF_full_meta_table_propnames.csv")) %>%
-  rename(ind_id = sample_name)
+  rename(sample_name = BGP_ID)
 xy_ind <- indv %>%
   filter(set == "current") %>%
-  transmute(ind_id = sample_name, patch = as.character(Population)) %>%
-  left_join(meta %>% select(ind_id, Lat, Long), by = "ind_id")
+  select(sample_name, Population) %>%
+  rename(patch = Population) %>%
+  left_join(
+    meta %>% select(sample_name, Lat, Long),
+    by = "sample_name"
+  )
 if (anyNA(xy_ind$Lat) || anyNA(xy_ind$Long))
   stop("Missing sample coordinates; check metadata join before using patch means.")
 patches_xy <- xy_ind %>%
