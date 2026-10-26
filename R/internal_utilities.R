@@ -64,3 +64,18 @@
   saveRDS(tpl, "data/1_phred_score.RDS")
   rm(tpl)
 }
+
+
+# from snpR
+.suppress_specific_warning <- function(fun, warn_to_suppress) {
+  warn_handle <- function(warn) {
+    if (any(grepl(warn_to_suppress, warn))) {
+      invokeRestart("muffleWarning")
+    }
+  }
+  withCallingHandlers(res <- fun, warning = warn_handle)
+  return(res)
+}
+.fix..call <- function(fun) {
+  return(.suppress_specific_warning(fun, "variable in calling scope for clarity"))
+}

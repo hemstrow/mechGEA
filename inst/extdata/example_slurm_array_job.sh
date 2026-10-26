@@ -4,7 +4,7 @@
 #SBATCH -J likeGEA
 #SBATCH --array=1-ARRAY_REPLACE
 #SBATCH --mem=100G
-#SBATCH -n 30
+#SBATCH -n 40
 #SBATCH -N 1
 #SBATCH --output=./slurm_%x_%A_%a.out
 #SBATCH --error=./slurm_%x_%A_%a.err

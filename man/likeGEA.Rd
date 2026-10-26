@@ -9,6 +9,7 @@ likeGEA(
   patch_info,
   patches_xy,
   env,
+  migration_results = NULL,
   N_sim_mig = 100,
   migration_loci = 1000,
   k_sd = 4,
@@ -20,8 +21,8 @@ likeGEA(
   target_div_pct_mig = 1,
   target_rhat_pct_mig = 1,
   chains_mig = 4,
-  iter_sampling_mig = 500,
-  iter_warmup_mig = 250,
+  iter_sampling_mig = 1000,
+  iter_warmup_mig = 1000,
   max_treedepth_mig = 12,
   refresh_mig = 200,
   mig_plot_threshold = 0.4,
@@ -32,6 +33,7 @@ likeGEA(
   iter_warmup_gea = 250,
   iter_sampling_gea = 500,
   plotting_CI = 0.95,
+  stop_after_migration = FALSE,
   par = parallel::detectCores() - 2
 )
 }
@@ -39,6 +41,19 @@ likeGEA(
 \item{Phred}{Phred-scaled genotype liklelihoods, as generated from a
 \code{.beagle} or \code{.beagle.gz} file by \code{\link{beagle2pl}}. See
 \code{\link{example_gl}}\code{$likelihoods} for an example.}
+
+\item{migration_results}{list or NULL, default NULL. If provided,
+\code{likeGEA} will use migration results in the list format produced by
+\code{\link{estimate_migration}} rather than re-running with the provided
+data. This is useful if you wish to assess migration once with a set of
+loci and then use that assessment for other genomic chunks (see
+\code{stop_after_migration} to estimate migration and then stop the model).}
+
+\item{stop_after_migration}{logical, default FALSE. If TRUE, stop the model
+after running \code{\link{estimate_migration}}. This is useful if you wish
+to assess migration once with a set of loci and then use that assessment
+for other genomic chunks (see \code{migration_results} to pick up the
+model with the results in other chunks.).}
 }
 \description{
 Runs the core likelihood-based GEA-with-migration pipeline, producing

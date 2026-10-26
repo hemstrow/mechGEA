@@ -11,8 +11,8 @@ estimate_migration(
   target_div_pct = 1,
   target_rhat_pct = 1,
   chains = 4,
-  iter_sampling = 500,
-  iter_warmup = 250,
+  iter_sampling = 1000,
+  iter_warmup = 1000,
   max_treedepth = 12,
   refresh = 200,
   par = parallel::detectCores() - 2

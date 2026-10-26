@@ -17,6 +17,7 @@ Imports:
     bread,
     cowplot,
     dplyr,
+    dreamerr,
     geodist,
     ggplot2,
     glue,

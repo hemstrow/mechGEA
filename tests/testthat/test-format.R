@@ -43,3 +43,39 @@ test_that("get_chunks",{
   file.remove("test.beagle")
   if(file.exists("test.beagle.gz")){file.remove("test.beagle.gz")}
 })
+
+test_that("env pruning",{
+  set.seed(123122)
+  # generate correlated envs
+  X <- rnorm(100)
+
+  # Create Y as a linear combination to inject correlation
+  r <- rnorm(40, ifelse(rbinom(20, 1, .5) == 1, .9, -.7), .2)
+  r[r >= 1] <- .99999
+  r[r <= -1] <- -.99999
+  Y <- matrix(0, 100, length(r) + 1)
+  Y[,1] <- X
+  for(i in 2:ncol(Y)){
+    Y[,i] <- r[i-1] * Y[,i-1] + sqrt(1 - r[i-1]^2) * rnorm(100)
+  }
+  Y <- as.data.table(Y)
+  colnames(Y) <- paste0("env", 1:ncol(Y))
+
+
+  # test
+  ty <- cor(Y)
+  ty[ty == 1] <- 0
+  expect_true(max(abs(ty)) >= .6)
+  res <- prune_envs(Y, r2 = .7, seed = 42)
+  tx <- cor(res)
+  tx[tx == 1] <- 0
+  expect_true(max(abs(tx)) <= .7)
+
+  # test with a patch column -- same result given same seed, but with a patch column
+  Ypatch <- cbind(patch = paste0("patch", 1:nrow(Y)), Y)
+  res2 <- prune_envs(Ypatch, r2 = .7, seed = 42)
+  expect_identical(res, res2[,-1])
+  expect_true(colnames(res2)[1] == "patch")
+
+
+})

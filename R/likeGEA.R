@@ -8,12 +8,24 @@
 #' @param Phred Phred-scaled genotype liklelihoods, as generated from a
 #'   \code{.beagle} or \code{.beagle.gz} file by \code{\link{beagle2pl}}. See
 #'   \code{\link{example_gl}}\code{$likelihoods} for an example.
+#' @param migration_results list or NULL, default NULL. If provided,
+#'   \code{likeGEA} will use migration results in the list format produced by
+#'   \code{\link{estimate_migration}} rather than re-running with the provided
+#'   data. This is useful if you wish to assess migration once with a set of
+#'   loci and then use that assessment for other genomic chunks (see
+#'   \code{stop_after_migration} to estimate migration and then stop the model).
+#' @param stop_after_migration logical, default FALSE. If TRUE, stop the model
+#'   after running \code{\link{estimate_migration}}. This is useful if you wish
+#'   to assess migration once with a set of loci and then use that assessment
+#'   for other genomic chunks (see \code{migration_results} to pick up the
+#'   model with the results in other chunks.).
 #'
 #' @author William Hemstrom, Nikunj Goel
 #'
 #' @export
 #' @references Insert Goel et. al. ref here.
 likeGEA <- function(Phred, patch_info, patches_xy, env,
+                    migration_results = NULL,
                     N_sim_mig = 100,
                     migration_loci = 1000,
                     k_sd = 4,
@@ -25,8 +37,8 @@ likeGEA <- function(Phred, patch_info, patches_xy, env,
                     target_div_pct_mig = 1.0,
                     target_rhat_pct_mig = 1.0,
                     chains_mig = 4,
-                    iter_sampling_mig = 500,
-                    iter_warmup_mig = 250,
+                    iter_sampling_mig = 1000,
+                    iter_warmup_mig = 1000,
                     max_treedepth_mig = 12,
                     refresh_mig = 200,
                     mig_plot_threshold = 0.4,
@@ -37,7 +49,39 @@ likeGEA <- function(Phred, patch_info, patches_xy, env,
                     iter_warmup_gea = 250,
                     iter_sampling_gea = 500,
                     plotting_CI = 0.95,
+                    stop_after_migration = FALSE,
                     par = parallel::detectCores() - 2){
+
+  # add a sanity check to check the inputs are blocked correctly!
+  # could change a bit so the user can supply the results of step 2 (so if they are running lots of chunks don't need to re-run)
+  # new name: mechGEA
+
+  #=====================sanity======================
+  dreamerr::check_set_value(env, "data.frame")
+  dreamerr::check_set_arg(N_sim_mig, migration_loci, seed, max_attempts_mig,
+                          chains_mig, iter_sampling_mig, iter_warmup_mig, max_treedepth_mig,
+                          refresh_mig, mig_plot_topn, .type = "scalar NONA integer")
+  dreamerr::check_set_arg(chains_gea, refresh_gea, iter_warmup_gea,
+                          iter_sampling_gea, par, .type = "scalar integer")
+  dreamerr::check_set_value(plotting_CI, .type = "scalar NONA numeric GE{0} LT{1}")
+  dreamerr::check_set_value(verbose, .type = "scalar NONA logical")
+  dreamerr::check_set_arg(p0, k_sd, .type = "scalar NONA numeric")
+
+
+  msg <- character()
+  # env
+  sds <- matrixStats::colSds(as.matrix(env[,!colnames(env) == "patch"]))
+  if(any(round(sds), 3) != 1){
+    msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column standard deviations are not 1.")
+  }
+  cmeans <- matrixStats::colMeans2(as.matrix(env[,!colnames(env) == "patch"]))
+  if(any(round(cmeans), 3) != 0){
+    msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column means are not 0.")
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
 
   #=====================1_prepare_data==============
   mig_data <- prepare_mig_data(Phred = Phred,
@@ -49,17 +93,26 @@ likeGEA <- function(Phred, patch_info, patches_xy, env,
                              verbose = verbose)
 
   #=====================2_estimate_migration========
-  Migration <- estimate_migration(data = mig_data$migration_data,
-                                  model = migration_model,
-                                  max_attempts = max_attempts_mig,
-                                  target_div_pct = target_div_pct_mig,
-                                  target_rhat_pct = target_rhat_pct_mig,
-                                  chains = chains_mig,
-                                  iter_sampling = iter_sampling_mig,
-                                  iter_warmup = iter_warmup_mig,
-                                  max_treedepth = max_treedepth_mig,
-                                  refresh = refresh_mig,
-                                  par = par)
+  if(is.null(migration_results)){
+    Migration <- estimate_migration(data = mig_data$migration_data,
+                                    model = migration_model,
+                                    max_attempts = max_attempts_mig,
+                                    target_div_pct = target_div_pct_mig,
+                                    target_rhat_pct = target_rhat_pct_mig,
+                                    chains = chains_mig,
+                                    iter_sampling = iter_sampling_mig,
+                                    iter_warmup = iter_warmup_mig,
+                                    max_treedepth = max_treedepth_mig,
+                                    refresh = refresh_mig,
+                                    par = par)
+  } else {
+    Migration <- migration_results; rm(migration_results)
+  }
+
+  if(stop_after_migration){
+    return(migration_results = Migration,
+           stan_and_migration_data = mig_data)
+  }
 
   #=====================3_plot_migration========
   mig_plot <- plot_migration(M = Migration,
@@ -80,6 +133,12 @@ likeGEA <- function(Phred, patch_info, patches_xy, env,
                                 iter_sampling = iter_sampling_gea,
                                 seed = seed,
                                 par = par)
+
+  beta_summary <- beta_summary(GEA_res$beta_draw,
+                               nloci = mig_data$stan_data$N_locus,
+                               nenv = mig_data$stan_data$N_env)
+
+  GEA_res <- c(GEA_res, beta_summary); rm(beta_summary)
 
   #=====================5_plot_results========
   plot_gea(stan_data = mig_data$stan_data,
@@ -291,8 +350,8 @@ estimate_migration <- function(data,
                                target_div_pct = 1.0,
                                target_rhat_pct = 1.0,
                                chains = 4,
-                               iter_sampling = 500,
-                               iter_warmup = 250,
+                               iter_sampling = 1000,
+                               iter_warmup = 1000,
                                max_treedepth = 12,
                                refresh = 200,
                                par = parallel::detectCores() - 2){
@@ -420,6 +479,7 @@ estimate_migration <- function(data,
     cat(sprintf("         Using best run: seed=%d, div=%.2f%%, Rhat>1.05=%.2f%%.\n",
                 best_seed, best_div_pct, best_rhat_pct))
   }
+  best_fit$save_object("files/2_migration_best_fit.RDS")
 
   ## ---- Extract + save migration matrix --------------------------------------
 
@@ -566,22 +626,13 @@ run_stan_GEA_model <- function(stan_data,
   tau_draw <- fit$draws(variables = c("Tau"), format = "draws_matrix")
   saveRDS(tau_draw, "files/4_tau_draw.RDS")
 
-  beta_summary <- summarise_draws_parallel(beta_draw)
-  saveRDS(beta_summary, "files/4_beta_summary.RDS")
 
-  mlog_p <- score_stan(beta_draw, data$N_locus, data$N_env)
-  saveRDS(mlog_p, "files/4_mlog_p.RDS")
-
-  cat("Saved files/4_{rho_kappa_mu_draw, beta_draw, tau_draw,",
-      "beta_summary, mlog_p}.RDS\n")
 
   tictoc::toc(quiet = FALSE, func.toc = toc_hours)
 
   return(list(rho_kappa_mu = rho_kappa_mu,
               beta_draw = beta_draw,
-              tau = tau_draw,
-              beta_summary = beta_summary,
-              mlog_p = mlog_p))
+              tau = tau_draw))
 
 }
 
@@ -699,4 +750,18 @@ estimate_neff <- function(stan_data){
   tictoc::toc(quiet = FALSE, func.toc = toc_hours)
 
   return(ret)
+}
+
+#' @export
+beta_summary <- function(beta_draw, nloci, nenv){
+  beta_summary <- summarise_draws_parallel(beta_draw)
+  saveRDS(beta_summary, "files/4_beta_summary.RDS")
+
+  mlog_p <- score_stan(beta_draw, nloci, nenv)
+  saveRDS(mlog_p, "files/4_mlog_p.RDS")
+
+  cat("Saved files/4_{rho_kappa_mu_draw, beta_draw, tau_draw,",
+      "beta_summary, mlog_p}.RDS\n")
+
+  return(list(beta_summary = beta_summary, mlog_p = mlog_p))
 }

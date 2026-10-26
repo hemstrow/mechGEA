@@ -39,7 +39,8 @@ example_slurm_job <- function(beagle_files,
                               env_mean_method = "unweighted",
                               ...){
 
-  browser()
+  # set the resources from arg too
+
   beagle_files <- normalizePath(beagle_files)
   bad_beagles <- !file.exists(beagle_files)
   if(any(bad_beagles)){
@@ -126,4 +127,67 @@ example_slurm_job <- function(beagle_files,
   xfun::gsub_file(sh, "ARRAY_REPLACE", as.character(nfiles))
 
   return(sh)
+}
+
+
+#' Prune correlated (environmental) variables.
+#'
+#' @param envs numeric matrix/data.frame/data.table of
+#' @param r2 numeric, default 0.7. The
+#'
+#' @export
+#' @author William Hemstrom
+prune_envs <- function(envs, r2 = .7, scale = TRUE, seed = floor(runif(1, 1, 10000))){
+  #============sanity=========
+  dreamerr::check_set_value(r2, "scalar NONA numeric GE{0} LT{1}")
+  dreamerr::check_set_value(scale, "scalar NONA logical")
+  dreamerr::check_set_value(seed, "scalar NONA integer")
+  dreamerr::check_set_value(envs, "data.frame | matrix")
+
+
+  #===========run=============
+  set.seed(seed)
+  envs <- as.data.table(envs)
+
+  pcol <-FALSE
+  if(colnames(envs)[1] == "patch"){
+    pcol <- TRUE
+    PID <- envs$patch
+    envs <- envs[,-1]
+  }
+
+  if(scale){
+    envs[, (names(envs)) := lapply(.SD, function(x) as.numeric(scale(x)))]
+  }
+
+  # purge highly correlated envs
+  tcor <- cor(as.matrix(envs))
+  tcor <- abs(tcor)
+  tcor[lower.tri(tcor, diag = TRUE)] <- 0
+  bad_pairs <- tcor >= r2
+  bad_pairs <- data.table(ABcor = tcor[bad_pairs],
+                          A = colnames(tcor)[col(tcor)[bad_pairs]],
+                          B = rownames(tcor)[row(tcor)[bad_pairs]])
+  bad_pairs <- bad_pairs[order(ABcor, decreasing = TRUE),]
+  all_purged <- character()
+  while(nrow(bad_pairs) > 0){
+    worst <- table(c(bad_pairs$A, bad_pairs$B))
+    worst <- worst[worst == max(worst)]
+    purged <- rmultinom(1, 1, prob = rep(1/length(worst), length(worst)))
+    purged <- names(worst)[which(purged == 1)]
+
+    bad_pairs <- bad_pairs[A != purged & B != purged,]
+    all_purged <- c(all_purged, purged)
+  }
+
+  keeps <- which(!colnames(envs) %in% all_purged)
+  envs <- .fix..call(envs[,..keeps])
+
+  if(pcol){
+    envs <- cbind(patch = PID, as.data.frame(envs))
+  } else {
+    envs <- as.data.frame(envs)
+  }
+
+  return(envs)
 }
