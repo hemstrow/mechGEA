@@ -150,16 +150,18 @@ prepare_mig_data <- function(Phred, individuals, coordinates,
   return(migration_data)
 }
 
-
+# increased the sampling and warm-up to try and get a better fit, and changed 
+# the adapt_delta from the default 0.8 to 0.99 (and adding this as a workable parameter in the fitting)
 estimate_migration <- function(data,
                                model = "migration_fast",
-                               max_attempts = 10,
+                               max_attempts = 1,
                                target_div_pct = 1,
                                target_rhat_pct = 1,
                                chains = 4,
-                               iter_sampling = 500,
-                               iter_warmup = 250,
+                               iter_sampling = 1000,
+                               iter_warmup = 1000,
                                max_treedepth = 12,
+                               adapt_delta = 0.99,
                                refresh = 200,
                                cores = max(1L, parallel::detectCores() - 2L)) {
   
@@ -224,6 +226,7 @@ estimate_migration <- function(data,
       seed = fit_seed,
       iter_warmup = iter_warmup,
       iter_sampling = iter_sampling,
+      adapt_delta = adapt_delta,
       threads_per_chain = threads_per_chain,
       max_treedepth = max_treedepth,
       refresh = refresh,
@@ -253,6 +256,11 @@ estimate_migration <- function(data,
   if (best_div_pct >= target_div_pct || best_rhat_pct >= target_rhat_pct)
     warning(sprintf("Targets not reached; using best fit (seed=%d, divergences=%.2f%%, high Rhat=%.2f%%).",
                     best_seed, best_div_pct, best_rhat_pct))
+  
+  #saving the stan fit so it can be looked at later for more information
+  dir.create("files", showWarnings = FALSE, recursive = TRUE)
+  
+  best_fit$save_object("files/migration_stan_fit.rds")
   
   M_summary <- best_fit$summary(variables = "Migration")
   Migration <- matrix(M_summary$mean, nrow = N_patch, ncol = N_patch)
