@@ -10,8 +10,6 @@
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=ericacnr@colostate.edu
 
-set -euo pipefail
-
 source ~/.bashrc
 conda activate R
 
