@@ -20,11 +20,28 @@ chunk_file <- file.path(
 
 stopifnot(file.exists(chunk_file))
 
+# Read individual IDs from Beagle header
+header <- strsplit(
+  readLines(gzfile(chunk_file), n = 1),
+  "\\s+"
+)[[1]]
+
+# Beagle has 3 columns per individual
+beagle_ids <- header[seq(4, length(header), by = 3)]
+
+# Convert genotype likelihoods
 likelihoods <- beagle2pl(chunk_file)
+
+# Restore individual IDs
+stopifnot(ncol(likelihoods) == length(beagle_ids))
+
+colnames(likelihoods) <- beagle_ids
 
 message("Loaded ", nrow(likelihoods), " loci and ",
         ncol(likelihoods), " individuals")
 
+message("First individuals: ",
+        paste(head(colnames(likelihoods)), collapse = ", "))
 #------------------
 # Prepare patch_info
 
