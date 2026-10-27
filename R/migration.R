@@ -7,7 +7,7 @@
 # Required packages: stringi, geodist, cmdstanr.
 
 migration <- function(Phred, patch_info, patches_xy,
-                      migration_loci = 25000,
+                      migration_loci = 23000,
                       N_sim_mig = 100,
                       seed = 42,
                       verbose = TRUE,
