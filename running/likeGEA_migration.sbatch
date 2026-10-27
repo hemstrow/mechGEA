@@ -2,9 +2,8 @@
 #SBATCH --job-name=likeGEA_mig
 #SBATCH --output=likeGEA_mig.%j.out
 #SBATCH --error=likeGEA_mig.%j.err
-#SBATCH --mem=32G
-#SBATCH --time=24:00:00
-#SBATCH --cpus-per-task=8
+#SBATCH --mem=12G
+#SBATCH --time=00:30:00
 #SBATCH --qos=cpu-normal
 #SBATCH --partition=acpu
 #SBATCH --mail-type=END,FAIL
@@ -31,11 +30,11 @@ fi
 
 echo "Migration output found: $migration_file"
 
-#------------------
-# Submit GEA array
-
-echo "Submitting GEA array 0-${LAST_INDEX}%4"
-
-sbatch \
-    --array="0-${LAST_INDEX}%4" \
-    likeGEA_array.sbatch
+# #------------------
+# # Submit GEA array
+# 
+# echo "Submitting GEA array 0-${LAST_INDEX}%4"
+# 
+# sbatch \
+#     --array="0-${LAST_INDEX}%4" \
+#     likeGEA_array.sbatch
