@@ -7,7 +7,7 @@ source("../R/migration.R")
 
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 
-result_dir <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/GEA/likeGEA_results_3"
+result_dir <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/GEA/likeGEA_results_4"
 
 dir.create(result_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -15,7 +15,7 @@ dir.create(result_dir, recursive = TRUE, showWarnings = FALSE)
 # Load first round-robin chunk
 
 chunk_file <- file.path(
-  base, "likeGEA_chunks_3", "chunk_000.beagle.gz"
+  base, "likeGEA_chunks_4", "chunk_000.beagle.gz"
 )
 
 stopifnot(file.exists(chunk_file))

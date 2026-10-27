@@ -7,7 +7,7 @@ beagle_file <- file.path(
   "current.combined.subsetted.norep.unrel.noPP.noLP.beagle.gz"
 )
 
-chunk_dir <- file.path(base, "likeGEA_chunks_3")
+chunk_dir <- file.path(base, "likeGEA_chunks_4")
 temp_dir <- file.path(chunk_dir, "temp_chunks")
 
 stopifnot(file.exists(beagle_file))
@@ -26,7 +26,7 @@ setwd(temp_dir)
 
 chunks <- get_chunks(
   beagle_file = beagle_file,
-  loci_per_chunk = 100000
+  loci_per_chunk = 25000
 )
 
 setwd(old_wd)

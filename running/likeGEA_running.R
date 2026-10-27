@@ -18,10 +18,10 @@ source("../R/likeGEA_no_mig.R")
 
 base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
-chunk_dir <- file.path(base, "likeGEA_chunks_3")
+chunk_dir <- file.path(base, "likeGEA_chunks_4")
 #representative_draw/ for the other version
-migration_dir <- file.path(root, "GEA/likeGEA_results_3/migration/")
-result_dir <- file.path(root, "GEA/likeGEA_results_sensativity/posterior_mean")
+migration_dir <- file.path(root, "GEA/likeGEA_results_4/migration/")
+result_dir <- file.path(root, "GEA/likeGEA_results_4/sensativity_posterior_mean")
 migration_file <- file.path(migration_dir, "Migration_M3b_mean.RDS")
 chunk_file <- file.path(chunk_dir, sprintf("chunk_%03d.beagle.gz", task_id))
 result_file <- file.path(result_dir, sprintf("likeGEA_chunk_%03d.rds", task_id))
