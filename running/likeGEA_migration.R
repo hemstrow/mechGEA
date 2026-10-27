@@ -127,6 +127,6 @@ dimnames(Migration) <- list(
   patches_xy$patch
 )
 
-saveRDS(Migration, "Migration_shared.RDS")
+saveRDS(Migration, "Migration_M3b_mean.RDS")
 
 message("Migration estimation complete.")
