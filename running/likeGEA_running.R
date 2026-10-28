@@ -16,7 +16,7 @@ task_id <- as.integer(args[1])
 # Source alongside this R script, regardless of SLURM's launch directory.
 source("../R/likeGEA_no_mig.R")
 
-base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/angsd/snp_calling_global"
+base <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical/lc_pipe/all_old_results_confusing/angsd/snp_calling_global"
 root <- "/scratch/alpine/ericacnr@colostate.edu/BCRF_Historical"
 chunk_dir <- file.path(base, "likeGEA_chunks_4")
 #representative_draw/ for the other version
