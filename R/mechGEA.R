@@ -100,6 +100,7 @@
 #' @param beta_summary beta parameter summary data from a fit GEA model, as
 #'   produced by \code{\link{beta_summary}}\code{$beta_summary}.
 #' @param env_names character, vector of environmental variable names.
+#' @param env_colors character or NULL, default NULL. Vector of colors for environmental variables.
 #'
 #' @author William Hemstrom, Nikunj Goel
 #'
@@ -135,6 +136,7 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                     iter_warmup_gea = 250,
                     iter_sampling_gea = 500,
                     CI = 0.95,
+                    env_colors = NULL,
                     stop_after_migration = FALSE,
                     par = parallel::detectCores() - 2){
 
@@ -194,8 +196,8 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
   }
 
   if(stop_after_migration){
-    return(migration_results = Migration,
-           stan_and_migration_data = mig_data)
+    return(list(migration_results = Migration,
+                stan_and_migration_data = mig_data))
   }
 
   #=====================3_plot_migration========
@@ -225,21 +227,24 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
   GEA_res <- c(GEA_res, beta_summary); rm(beta_summary)
 
   #=====================5_plot_results========
-  plot_gea(stan_data = mig_data$stan_data,
-           migration_results = Migration,
-           beta_draw = GEA_res$beta_draw,
-           beta_summary = GEA_res$beta_summary,
-           rho_kappa_mu =  GEA_res$rho_kappa_mu,
-           env_names = colnames(env)[-1],
-           CI = CI)
+  p_gea <- plot_gea(stan_data = mig_data$stan_data,
+                    migration_results = Migration,
+                    beta_draw = GEA_res$beta_draw,
+                    beta_summary = GEA_res$beta_summary,
+                    rho_kappa_mu =  GEA_res$rho_kappa_mu,
+                    env_names = colnames(env)[-1],
+                    CI = CI,
+                    env_colors = env_colors)
 
   #=====================6_estimate_neff========
   neff <- estimate_neff(mig_data$stan_data)
 
-  return(list(GEA_results = GEA_res,
+  return(list(SNP_pvalues = p_gea$SNP_pvalues,
+              GEA_results = GEA_res,
               migration_results = Migration,
               Neff_results = neff,
               migration_plot = mig_plot,
+              GEA_plots = p_gea[!names(p_gea) == "SNP_pvalues"],
               stan_and_migration_data = mig_data))
 }
 

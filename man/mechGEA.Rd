@@ -91,7 +91,7 @@ plot_migration(
   patches_xy,
   mig_plot_threshold = 0.4,
   mig_plot_topn = 2,
-  mig_plot_bin_size = 1
+  mig_plot_binsize = 1
 )
 
 plot_gea(
@@ -101,7 +101,8 @@ plot_gea(
   beta_summary,
   rho_kappa_mu,
   env_names,
-  CI = 0.95
+  CI = 0.95,
+  env_colors = NULL
 )
 }
 \arguments{
@@ -159,9 +160,11 @@ See details. NIKUNJ HERE PLEASE!}
 fitting the migration model. If the model does not converge after
 \code{max_attempts_mig} tries, the best fit model will be used.}
 
-\item{target_div_pct_mig}{numeric, default 1. NIKUNJ HERE PLEASE!}
+\item{target_div_pct_mig}{numeric, default 1. Maximum percentage of
+divergences allowed during migration model fitting.}
 
-\item{target_rhat_pct_mig}{numeric, default 1. NIKUNJ HERE PLEASE!}
+\item{target_rhat_pct_mig}{numeric, default 1. Maximum rhat allowed during
+migration model fitting.}
 
 \item{chains_mig}{integer, default 4. Number of chains to run for the
 Bayesian migration model fitting.}
@@ -234,6 +237,8 @@ produced by \code{\link{beta_summary}}\code{$beta_summary}.}
 \code{\link{run_stan_GEA_model}}\code{$rho_kapp_mu}.}
 
 \item{env_names}{character, vector of environmental variable names.}
+
+\item{env_colors}{character or NULL, default NULL. Vector of colors for environmental variables.}
 }
 \description{
 Core functions for the mechanistic GEA-with-migration pipeline, producing

@@ -1,3 +1,4 @@
-# mechGEA (development version)
-
-* Initial CRAN submission.
+# mechGEA 1.3.0
+## Features:
+### Major:
+* Package introduced.

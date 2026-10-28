@@ -26,4 +26,53 @@ test_that("gea plots",{
                 env_names = colnames(input_data$env)[-1],
                 CI = 0.95)
 
+  # are there reasonable plots?
+  expect_true(methods::is(p$manhattan, "ggplot"))
+  expect_true(all(unlist(lapply(p$migration_selection_balance, methods::is, class = "ggplot"))))
+  expect_true(all(unlist(lapply(p$association_plots, methods::is, class = "ggplot"))))
+
+  expect_true(sum(p$manhattan@data$value >= 4) == 5)
+  expect_equal(nrow(ggplot2::ggplot_build(p$migration_selection_balance[[1]])$layout$layout),
+               nrow(ggplot2::ggplot_build(p$association_plots[[1]])$layout$layout))
+
+  # pvals
+  pvals <- p$SNP_pvalues
+  senvgrid <- expand.grid(Locus = 1:150, env = names(input_data$env)[-1])
+  senvgrid <- as.data.table(senvgrid)
+  senvgrid[,facet := paste0(Locus, "_", env)]
+  expect_identical(sort(paste0(pvals$SNP, "_", pvals$Env)),
+                   sort(senvgrid$facet)) # everything accounted for?
+  expect_equal(sum(pvals$nlogp >= 4), 5)
+
+
+})
+
+test_that("migration_plots",{
+  skip_if_not_installed("cmdstanr")
+  skip_on_cran()
+
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  phred <- beagle2pl(beagle, lines = 1:150)
+
+  input_data <- prepare_metadata(sample_metadata)
+
+  res <- mechGEA(phred,
+                 patch_info = input_data$patch_info,
+                 patches_xy = input_data$patches_xy,
+                 migration_loci = 50,
+                 env = input_data$env,
+                 iter_sampling_mig = 100,
+                 iter_warmup_mig = 200,
+                 stop_after_migration = TRUE)
+
+
+  p <- plot_migration(migration_results = res$migration_results,
+                 migration_data = res$stan_and_migration_data$migration_data,
+                 patches_xy = input_data$patches_xy,
+                 mig_plot_threshold = 0.4,
+                 mig_plot_topn = 2,
+                 mig_plot_binsize = 1)
+
+  expect_true(methods::is(p$IBD, "ggplot"))
+  expect_true(methods::is(p$map, "ggplot"))
 })

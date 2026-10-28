@@ -20,6 +20,7 @@ Imports:
     dreamerr,
     geodist,
     ggplot2,
+    ggh4x,
     glue,
     gstat,
     LaplacesDemon,

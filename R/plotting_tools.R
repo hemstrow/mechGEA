@@ -124,6 +124,9 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
       panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 1)
     )
 
+  ggplot2::ggsave("plot/Migration_map.pdf", map, width = 9, height = 8)
+  cat("Saved: plot/Migration_map.pdf\n")
+
   ## ---- Isolation by distance plot --------------------------------------------
 
   dist_vec <- as.vector(DistM)
@@ -145,6 +148,9 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
       axis.ticks = ggplot2::element_line(color = "black")
     )
 
+  ggplot2::ggsave("plot/Isolation_by_distance.pdf", Dist_mig, width = 6, height = 4)
+  cat("Saved: plot/Isolation_by_distance.pdf\n")
+
   ## ---- Combine and save ------------------------------------------------------
 
   combined_plot <- cowplot::plot_grid(
@@ -153,7 +159,9 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
     rel_widths = c(2.8, 3)
   )
 
-  return(combined_plot)
+  print(combined_plot)
+
+  return(list(IBD = Dist_mig, map = map))
 }
 
 
@@ -165,7 +173,8 @@ plot_gea <- function(stan_data,
                      beta_summary,
                      rho_kappa_mu,
                      env_names,
-                     CI = 0.95){
+                     CI = 0.95,
+                     env_colors = NULL){
 
   # DEV NOTES: Plots should probably all be swapped over to ggplots and the raw data
   # returned to allow for much easier customization of plots!
@@ -196,25 +205,28 @@ plot_gea <- function(stan_data,
               nrow(inferred), CI))
 
   ## ---- Env color palette (Okabe-Ito CVD-safe) ------------------------------
-  okabe_ito <- grDevices::palette.colors(palette = "Okabe-Ito")
-  cvd_safe  <- unname(okabe_ito[!names(okabe_ito) %in% c("black", "gray")])
-  if (data$N_env > length(cvd_safe))
-    cvd_safe <- grDevices::palette.colors(data$N_env, palette = "Polychrome 36",
-                                          recycle = FALSE)
-  env_colors <- setNames(cvd_safe[seq_len(data$N_env)], env_names)
+  if(is.null(env_colors)){
+    okabe_ito <- grDevices::palette.colors(palette = "Okabe-Ito")
+    cvd_safe  <- unname(okabe_ito[!names(okabe_ito) %in% c("black", "gray")])
+    if (data$N_env > length(cvd_safe))
+      cvd_safe <- grDevices::palette.colors(data$N_env, palette = "Polychrome 36",
+                                            recycle = FALSE)
+    env_colors <- setNames(cvd_safe[seq_len(data$N_env)], env_names)
+  } else {
+    env_colors <- setNames(env_colors, env_names)
+  }
+
 
   ## ---- Manhattan plot ------------------------------------------------------
-
-  # DEV NOTE: should convert this over to ggplot for consistancy; can pull scripting
-  # from snpR for a nice plot.
   ymin <- min(beta_Mlogp, na.rm = TRUE)
   ymax <- max(c(beta_Mlogp, -log(1 - CI) + 1), na.rm = TRUE) + 1
 
   mbMlogp <- as.data.table(beta_Mlogp)
+  colnames(mbMlogp) <- env_names
   mbMlogp[,SNP := 1:.N]
-  mbMlogp <- melt(mbMlogp, id.vars = "SNP")
+  mbMlogp <- melt(mbMlogp, id.vars = "SNP", value.name = "nlogp", variable.name = "Env")
   p_man <- ggplot2::ggplot(mbMlogp) +
-    ggplot2::geom_point(ggplot2::aes(x = SNP, y = value),
+    ggplot2::geom_point(ggplot2::aes(x = SNP, y = nlogp),
                         color = "grey70", size = .5) +
     ggplot2::xlab("Locus index (candidate set)") +
     ggplot2:: ylab(bquote(-log(p[th])))
@@ -223,13 +235,14 @@ plot_gea <- function(stan_data,
     inferred[,Env := match(Env_var, env_names)]
     inferred[,beta := beta_Mlogp[cbind(inferred$Locus, inferred$Env)]]
     inferred[,color := env_colors[inferred$Env_var]]
+    inferred
 
     p_man <- p_man +
       ggplot2::geom_point(data = inferred,
-                          ggplot2::aes(x = Locus, y = beta, color = as.character(Env)),
+                          ggplot2::aes(x = Locus, y = beta, color = as.character(Env_var)),
                           size = 2, inherit.aes = FALSE) +
-      ggplot2::scale_color_manual(breaks = unique(as.character(inferred$Env)),
-                                  values = unique(inferred$color)) +
+      ggplot2::scale_color_manual(breaks = env_names[which(env_names %in% inferred$Env_var)],
+                                  values = env_colors[which(env_names %in% inferred$Env_var)]) +
       ggplot2::guides(color = ggplot2::guide_legend("Env"))
     inferred$Env <- inferred$beta <- inferred$color <- NULL
   }
@@ -239,6 +252,7 @@ plot_gea <- function(stan_data,
     ggplot2::theme_bw()
 
   ggplot2::ggsave("plot/manhattan.pdf", width = 10, height = 5)
+  cat("Saved: plot/manhattan.pdf\n")
 
   ## ============================================================================
   ## MIGRATION-SELECTION BALANCE for inferred adaptive loci
@@ -334,79 +348,88 @@ plot_gea <- function(stan_data,
         cat(sprintf("  locus %2d / %2d done\n", i, nrow(bal_table)))
     }
 
-    L               <- 4L
-    panels_per_page <- L * L
-    total_panels    <- nrow(bal_table)
-    n_pages         <- ceiling(total_panels / panels_per_page)
-
-    pdf("plot/migration_sel_balance.pdf", width = 8.5, height = 9.4)
+    # prepare plot data
 
     col_off    <- "#0072B2"
     col_on     <- "#E69F00"
     col_arrow1 <- "grey25"
 
-    for (page in seq_len(n_pages)) {
-      if (page == 1L) {
-        layout(rbind(rep(1, L), matrix(2:(L * L + 1), L, L, byrow = TRUE)),
-               heights = c(0.55, rep(1, L)))
-        par(mar = c(0, 0, 0, 0), xpd = NA)
-        plot.new()
-        text(0.5, 0.80, "Migration-selection balance for adaptive loci",
-             font = 2, cex = 1.55)
-        legend("bottom", inset = c(0, 0.04),
-               legend = c("No migration", "Mean-field  (1st correction)"),
-               pch    = 21,
-               pt.bg  = c(col_off, col_on),
-               col    = "white",
-               pt.cex = c(1.7, 1.7),
-               horiz  = TRUE, cex = 1.10, bty = "n")
-      } else {
-        layout(matrix(seq_len(L * L), L, L, byrow = TRUE))
-      }
 
-      par(mar      = c(4.4, 4.7, 2.4, 0.7),
-          mgp      = c(2.7, 0.7, 0),
-          tcl      = -0.35,
-          cex.axis = 1.05, cex.lab = 1.20,
-          family   = "sans")
-
-      i_start  <- (page - 1L) * panels_per_page + 1L
-      i_end    <- min(page * panels_per_page, total_panels)
-      page_idx <- seq(i_start, i_end)
-
-      for (i in page_idx) {
-        env_vec <- as.vector(unlist(data$Env[, bal_table$Env[i]]))
-        y_off   <- rowMeans(p_mig_off[, , i])
-        y_on    <- rowMeans(p_mig_on [, , i])
-
-        yrng <- range(c(y_off, y_on))
-        pad  <- max(0.025, 0.18 * diff(yrng))
-        ylim <- c(max(0, yrng[1] - pad), min(1, yrng[2] + pad))
-
-        plot(env_vec, y_on, type = "n",
-             xlab = gsub("_", " ", colnames(data$Env)[bal_table$Env[i]]),
-             ylab = expression(paste("Per-deme mean  ", mu[k])),
-             ylim = ylim, las = 1)
-
-        points(env_vec, y_off, pch = 21, bg = col_off, col = "white",
-               cex = 1.5, lwd = 0.7)
-        points(env_vec, y_on,  pch = 21, bg = col_on,  col = "white",
-               cex = 1.5, lwd = 0.7)
-        arrows(x0 = env_vec, y0 = y_off, x1 = env_vec, y1 = y_on,
-               length = 0.07, angle = 22, code = 2, lwd = 1.3, col = col_arrow1)
-
-        title(main = paste0("Locus ", bal_table$Locus[i]),
-              line = 0.6, font.main = 2, cex.main = 1.20)
-      }
-
-      n_unused <- panels_per_page - length(page_idx)
-      if (n_unused > 0L) for (k in seq_len(n_unused)) plot.new()
+    melt_ptable <- function(x){
+      x <- as.data.table(x)
+      colnames(x) <- paste0("Locus ", bal_table$Locus)
+      x <- cbind(x, patch = 1:nrow(data$Env))
+      x <- melt(as.data.table(x), id.vars = "patch")
     }
 
+    env_mat <- melt_ptable(data$Env[, bal_table$Env])
+    env_mat[,Env := rep(bal_table$Env, each = nrow(data$Env))]
+    env_mat[,Env := env_names[Env]]
+    y_off <- melt_ptable(apply(p_mig_off, 3, rowMeans))
+    y_on <- melt_ptable(apply(p_mig_on, 3, rowMeans))
+
+    y_off[,type := "No migration"]
+    y_on[,type := "Mean-field  (1st correction)"]
+
+    y_off$env_value <- env_mat$value
+    y_on$env_value <- env_mat$value
+    y_off$Env <- env_mat$Env
+    y_on$Env <- env_mat$Env
+
+    msb_data <- rbind(y_on, y_off)
+    msb_data <- dplyr::rename(msb_data,
+                              muk = value,
+                              Locus = variable)
+
+    cast_msb <- dcast(msb_data, patch + Locus + env_value + Env ~ type, value.var = "muk")
+
+
+    # plot a multi-page pdf and generate per-page ggplots.
+    panels <- unique(msb_data[,.(Locus, Env)])
+    panels <- dplyr::arrange(panels, Locus, Env)
+
+    panels_per_page <- 16
+    total_pages <- ceiling(nrow(panels)/panels_per_page)
+    set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
+    panels[,facet := paste0(Locus, "_", Env)]
+
+    msb_plots <- vector("list", length(unique(panels$page)))
+    names(msb_plots) <- paste0("page_", unique(panels$page))
+
+    pdf("plot/migration_sel_balance.pdf", width = 8.5, height = 9.4)
+
+    for(i in 1:length(msb_plots)){
+      tpd <- msb_data[paste0(Locus, "_", Env) %in% panels[panels$page == i,]$facet]
+      tcast <- cast_msb[paste0(Locus, "_", Env) %in% panels[panels$page == i,]$facet]
+
+      msb_plots[[i]] <- ggplot2::ggplot(tpd, ggplot2::aes(x = env_value, y = muk, color = type)) +
+        ggplot2::geom_point(size = 3) +
+        ggplot2::geom_segment(data = tcast, ggplot2::aes(y = `No migration`,
+                                                         yend = `Mean-field  (1st correction)`,
+                                                         x = env_value, xend = env_value),
+                              arrow = grid::arrow(length = grid::unit(6, "points")),
+                              inherit.aes = FALSE) +
+        ggh4x::facet_wrap2(Locus ~ Env, scales = "free_x", strip = ggh4x::strip_split(position = c("top", "bottom"))) +
+        ggplot2::scale_color_manual(breaks = c("No migration", "Mean-field  (1st correction)"),
+                                    values = c(col_off, col_on)) +
+        ggplot2::theme_bw() +
+        ggplot2::scale_y_continuous(limits = c(0, 1)) +
+        ggplot2::theme(legend.title = ggplot2::element_blank(),
+                       strip.background = ggplot2::element_blank(),
+                       axis.title.x = ggplot2::element_blank(),
+                       strip.placement = "outside") +
+        ggplot2::ylab(bquote('Per-deme mean' ~ mu[k])) +
+        ggplot2::ggtitle("Migration-Selection balance for adaptive loci")
+
+      print(msb_plots[[i]])
+    }
     dev.off()
     cat("Saved: plot/migration_sel_balance.pdf\n")
+
+
   } else {
     cat("No inferred adaptive loci -- skipping migration-sel balance plot.\n")
+    msb_plots <- NULL
   }
 
   ## ============================================================================
@@ -415,6 +438,7 @@ plot_gea <- function(stan_data,
 
   if (nrow(inferred) == 0L) {
     cat("No inferred adaptive loci -- skipping posterior_check.stan.\n")
+    asso_plots <- NULL
   } else {
     inferred      <- inferred[order(Locus)]
     imp_env_index <- match(inferred$Env_var, env_names)
@@ -461,25 +485,70 @@ plot_gea <- function(stan_data,
 
     p_mean <- matrix(fit_pc$summary(variables = "p")$mean,
                      nrow = imp_loci_data$N_locus, ncol = imp_loci_data$N_patch)
-    ymin_l <- LaplacesDemon::logit(min(apply(p_mean, 1, min)))
-    ymax_l <- LaplacesDemon::logit(max(apply(p_mean, 1, max)))
 
-    L_grid <- 4L
-    pdf("plot/GE_association.pdf", width = 8, height = 8)
-    op <- par(mfrow = c(L_grid, L_grid), mai = c(0.55, 0.7, 0.3, 0.1))
-    for (i in seq_len(nrow(inferred))) {
-      plot(imp_loci_data$Env[i, ], LaplacesDemon::logit(p_mean[i, ]),
-           pch = 16, col = env_colors[inferred$Env_var[i]],
-           xlab = inferred$Env_var[i],
-           ylab = sprintf("logit(p)  Locus %d", inferred$Locus[i]),
-           ylim = c(ymin_l, ymax_l))
-      fit_lm <- lm(LaplacesDemon::logit(p_mean[i, ]) ~ imp_loci_data$Env[i, ])
-      abline(fit_lm, col = adjustcolor(env_colors[inferred$Env_var[i]], 0.6),
-             lwd = 1.5)
+    # format data for plotting
+    melt_pmean <- function(x){
+      x <- as.data.table(t(x))
+      colnames(x) <- paste0("Locus ", inferred$Locus)
+      x[,patch := paste0("patch_", 1:nrow(data$Env))]
+      return(melt(x, id.vars = "patch"))
     }
-    par(op)
+
+    p_mean <- melt_pmean(p_mean)
+    env <- melt_pmean(imp_loci_data$Env)
+    env[,Env := rep(inferred$Env_var, each = nrow(data$Env))]
+    p_mean[,logit := LaplacesDemon::logit(value)]
+
+
+    p_mean$env_value <- env$value
+    p_mean$Env <- env$Env
+
+    ymin_l <- min(p_mean$logit)
+    ymax_l <- max(p_mean$logit)
+
+    p_mean <- dplyr::rename(p_mean, p_logit = logit, Locus = variable)
+
+    panels <- unique(p_mean[,.(Locus, Env)])
+    panels <- dplyr::arrange(panels, Locus, Env)
+
+
+    # plot the associations
+    panels_per_page <- 16
+    total_pages <- ceiling(nrow(panels)/panels_per_page)
+    set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
+    panels[,facet := paste0(Locus, "_", Env)]
+
+    asso_plots <- vector("list", length(unique(panels$page)))
+    names(asso_plots) <- paste0("page_", unique(panels$page))
+
+    pdf("plot/GE_association.pdf", width = 8, height = 9.4)
+
+    for(i in 1:length(asso_plots)){
+      tpd <- p_mean[paste0(Locus, "_", Env) %in% panels[panels$page == i,]$facet]
+
+      asso_plots[[i]] <- ggplot2::ggplot(tpd, ggplot2::aes(x = env_value, y = p_logit, color = Env)) +
+        ggplot2::geom_point() +
+        ggplot2::geom_smooth(method = "lm", se = FALSE) +
+        ggh4x::facet_wrap2(Locus ~ Env, scales = "free_x", strip = ggh4x::strip_split(position = c("top", "bottom"))) +
+        ggplot2::theme_bw() +
+        ggplot2::theme(axis.title.x = ggplot2::element_blank(),
+                       strip.background = ggplot2::element_blank(),
+                       strip.placement = "outside",
+                       legend.position = "none") +
+        ggplot2::scale_y_continuous(limits = c(ymin_l, ymax_l)) +
+        ggplot2::scale_color_manual(breaks = unique(as.character(inferred$Env_var)),
+                                    values = unique(env_colors[inferred$Env_var])) +
+        ggplot2::ylab(paste0("logit(p)"))
+
+      print(asso_plots[[i]])
+
+    }
     dev.off()
     cat("Saved: plot/GE_association.pdf\n")
   }
 
+  return(list(SNP_pvalues = mbMlogp,
+              manhattan = p_man,
+              migration_selection_balance = msb_plots,
+              association_plots = asso_plots))
 }
