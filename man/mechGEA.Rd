@@ -40,6 +40,7 @@ mechGEA(
   iter_warmup_gea = 250,
   iter_sampling_gea = 500,
   CI = 0.95,
+  env_colors = NULL,
   stop_after_migration = FALSE,
   par = parallel::detectCores() - 2
 )
@@ -119,8 +120,8 @@ Data fitting this format can be produced by \code{\link{prepare_metadata}}.}
 \item{patches_xy}{\code{\link[base]{data.frame}} or similar. Spatial
 coordinates for each patch, with three columns named \code{patch},
 \code{lat}, and \code{lon}. Must be ordered identically to order of patch
-appearance in \code{patch_info}. Data fitting this format can be produced by
-\code{\link{prepare_metadata}}.}
+appearance in \code{patch_info}. Data fitting this format can be produced
+by \code{\link{prepare_metadata}}.}
 
 \item{env}{\code{\link[base]{data.frame}} or similar. Uncorrelated, scaled
 environmental variables for each patch, with N + 1 columns. The first
@@ -142,9 +143,9 @@ loci and then use that assessment for other genomic chunks (see
 \code{migration_results} are provided.}
 
 \item{migration_loci}{integer, default 1000. Number of loci to use from
-\code{Phred} to use for estimating migration. Must be equal to or less
-than the total number of provided loci. Ignored if \code{migration_results}
-are provided.}
+\code{Phred} to use for estimating migration. Must be equal to or less than
+the total number of provided loci. Ignored if \code{migration_results} are
+provided.}
 
 \item{k_sd}{numeric, default 4. NIKUNJ HERE PLEASE!}
 
@@ -156,8 +157,8 @@ are provided.}
 for estimating migration. Options are "migration_fast" or "migration_M3b".
 See details. NIKUNJ HERE PLEASE!}
 
-\item{max_attempts_mig}{integer, default 10. Number of times to try
-fitting the migration model. If the model does not converge after
+\item{max_attempts_mig}{integer, default 10. Number of times to try fitting
+the migration model. If the model does not converge after
 \code{max_attempts_mig} tries, the best fit model will be used.}
 
 \item{target_div_pct_mig}{numeric, default 1. Maximum percentage of
@@ -175,19 +176,19 @@ to run the Bayesian migration model fitting.}
 \item{iter_warmup_mig}{integer, default 1000. Number of warm-up/burn-in
 iterations to run the Bayesian migration model fitting.}
 
-\item{max_treedepth_mig}{integer, default 12. Maximum tree-depth to
-use during Bayesian migration model fitting.}
+\item{max_treedepth_mig}{integer, default 12. Maximum tree-depth to use
+during Bayesian migration model fitting.}
 
-\item{refresh_mig}{integer, default 200. Controls how often model
-progress is reported during Bayesian migration model fitting.}
+\item{refresh_mig}{integer, default 200. Controls how often model progress is
+reported during Bayesian migration model fitting.}
 
 \item{mig_plot_threshold}{numeric, default 0.4. For plotting migration model
 results, controls the migration strength threshold above which migration
 connections will be included in networks.}
 
-\item{mig_plot_topn}{integer, default 2. Number of migratory
-connections to consider for each pixel when plotting migration networks.
-NIKUNJ HERE PLEASE!}
+\item{mig_plot_topn}{integer, default 2. Number of migratory connections to
+consider for each pixel when plotting migration networks. NIKUNJ HERE
+PLEASE!}
 
 \item{mig_plot_binsize}{integer, default 1. NIKUNJ HERE PLEASE!}
 
@@ -203,21 +204,24 @@ iterations to run the during GEA model fitting.}
 \item{iter_sampling_gea}{integer, default 250. Number of sampling iterations
 to run the during GEA model fitting.}
 
-\item{CI}{numeric, default 0.95. Confidence interval to plot for the
-GEA model.}
+\item{CI}{numeric, default 0.95. Confidence interval to plot for the GEA
+model.}
+
+\item{env_colors}{character or NULL, default NULL. Vector of colors for
+environmental variables.}
 
 \item{stop_after_migration}{logical, default FALSE. If TRUE, stop the model
 after running \code{\link{estimate_migration}}. This is useful if you wish
 to assess migration once with a set of loci and then use that assessment
-for other genomic chunks (see \code{migration_results} to pick up the
-model with the results in other chunks.).}
+for other genomic chunks (see \code{migration_results} to pick up the model
+with the results in other chunks.).}
 
-\item{par}{integer, default \code{parallel::detectCores() - 2}, two less
-than the available cores. Maximum number of cores to allocate for model
-fitting; the number of cores per chain will be \code{par}/\code{N_chains}.}
+\item{par}{integer, default \code{parallel::detectCores() - 2}, two less than
+the available cores. Maximum number of cores to allocate for model fitting;
+the number of cores per chain will be \code{par}/\code{N_chains}.}
 
-\item{migration_data}{list containing data for migration model, in the
-format produced by \code{\link{prepare_mig_data}}\code{$migration_data}.}
+\item{migration_data}{list containing data for migration model, in the format
+produced by \code{\link{prepare_mig_data}}\code{$migration_data}.}
 
 \item{stan_data}{list containing data for the stan GEA model fitting, in the
 format produced by \code{\link{prepare_mig_data}}\code{$stan_data}.}
@@ -237,8 +241,6 @@ produced by \code{\link{beta_summary}}\code{$beta_summary}.}
 \code{\link{run_stan_GEA_model}}\code{$rho_kapp_mu}.}
 
 \item{env_names}{character, vector of environmental variable names.}
-
-\item{env_colors}{character or NULL, default NULL. Vector of colors for environmental variables.}
 }
 \description{
 Core functions for the mechanistic GEA-with-migration pipeline, producing
@@ -266,7 +268,10 @@ batches and then combining.
 
 }}
 \references{
-Insert Goel et. al. ref here.
+Goel, N., et al. (2026). Identifying adaptive variation in
+spatially structured populations using low-coverage whole-genome sequencing
+data. \emph{Molecular Biology and Evolution}, 43(10), msag255.
+https://doi.org/10.1093/molbev/msag255
 }
 \author{
 William Hemstrom, Nikunj Goel

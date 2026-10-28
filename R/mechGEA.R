@@ -16,8 +16,8 @@
 #' @param patches_xy \code{\link[base]{data.frame}} or similar. Spatial
 #'   coordinates for each patch, with three columns named \code{patch},
 #'   \code{lat}, and \code{lon}. Must be ordered identically to order of patch
-#'   appearance in \code{patch_info}. Data fitting this format can be produced by
-#'   \code{\link{prepare_metadata}}.
+#'   appearance in \code{patch_info}. Data fitting this format can be produced
+#'   by \code{\link{prepare_metadata}}.
 #' @param env \code{\link[base]{data.frame}} or similar. Uncorrelated, scaled
 #'   environmental variables for each patch, with N + 1 columns. The first
 #'   column must be named \code{patch} and contain patch names. The additional N
@@ -29,17 +29,17 @@
 #' @param N_sim_mig integer, default 100. NIKUNJ HERE PLEASE! Ignored if
 #'   \code{migration_results} are provided.
 #' @param migration_loci integer, default 1000. Number of loci to use from
-#'   \code{Phred} to use for estimating migration. Must be equal to or less
-#'   than the total number of provided loci. Ignored if \code{migration_results}
-#'   are provided.
+#'   \code{Phred} to use for estimating migration. Must be equal to or less than
+#'   the total number of provided loci. Ignored if \code{migration_results} are
+#'   provided.
 #' @param k_sd numeric, default 4. NIKUNJ HERE PLEASE!
 #' @param p0 numeric, default 20. NIKUNJ HERE PLEASE!
 #' @param seed integer, default 42. Seed used for all model steps.
 #' @param migration_model character, default "migration_fast". Choice of model
 #'   for estimating migration. Options are "migration_fast" or "migration_M3b".
 #'   See details. NIKUNJ HERE PLEASE!
-#' @param max_attempts_mig integer, default 10. Number of times to try
-#'   fitting the migration model. If the model does not converge after
+#' @param max_attempts_mig integer, default 10. Number of times to try fitting
+#'   the migration model. If the model does not converge after
 #'   \code{max_attempts_mig} tries, the best fit model will be used.
 #' @param target_div_pct_mig numeric, default 1. Maximum percentage of
 #'   divergences allowed during migration model fitting.
@@ -51,16 +51,16 @@
 #'   to run the Bayesian migration model fitting.
 #' @param iter_warmup_mig integer, default 1000. Number of warm-up/burn-in
 #'   iterations to run the Bayesian migration model fitting.
-#' @param max_treedepth_mig integer, default 12. Maximum tree-depth to
-#'   use during Bayesian migration model fitting.
-#' @param refresh_mig integer, default 200. Controls how often model
-#'   progress is reported during Bayesian migration model fitting.
+#' @param max_treedepth_mig integer, default 12. Maximum tree-depth to use
+#'   during Bayesian migration model fitting.
+#' @param refresh_mig integer, default 200. Controls how often model progress is
+#'   reported during Bayesian migration model fitting.
 #' @param mig_plot_threshold numeric, default 0.4. For plotting migration model
 #'   results, controls the migration strength threshold above which migration
 #'   connections will be included in networks.
-#' @param mig_plot_topn integer, default 2. Number of migratory
-#'   connections to consider for each pixel when plotting migration networks.
-#'   NIKUNJ HERE PLEASE!
+#' @param mig_plot_topn integer, default 2. Number of migratory connections to
+#'   consider for each pixel when plotting migration networks. NIKUNJ HERE
+#'   PLEASE!
 #' @param mig_plot_binsize integer, default 1. NIKUNJ HERE PLEASE!
 #' @param chains_gea integer, default 2. Number of chains to run for the GEA
 #'   model.
@@ -70,8 +70,8 @@
 #'   to run the during GEA model fitting.
 #' @param iter_warmup_gea integer, default 200. Number of warm-up/burn-in
 #'   iterations to run the during GEA model fitting.
-#' @param CI numeric, default 0.95. Confidence interval to plot for the
-#'   GEA model.
+#' @param CI numeric, default 0.95. Confidence interval to plot for the GEA
+#'   model.
 #' @param migration_results list or NULL, default NULL. If provided,
 #'   \code{mechGEA} will use migration results in the list format produced by
 #'   \code{\link{estimate_migration}} rather than re-running with the provided
@@ -81,13 +81,13 @@
 #' @param stop_after_migration logical, default FALSE. If TRUE, stop the model
 #'   after running \code{\link{estimate_migration}}. This is useful if you wish
 #'   to assess migration once with a set of loci and then use that assessment
-#'   for other genomic chunks (see \code{migration_results} to pick up the
-#'   model with the results in other chunks.).
-#' @param par integer, default \code{parallel::detectCores() - 2}, two less
-#'   than the available cores. Maximum number of cores to allocate for model
-#'   fitting; the number of cores per chain will be \code{par}/\code{N_chains}.
-#' @param migration_data list containing data for migration model, in the
-#'   format produced by \code{\link{prepare_mig_data}}\code{$migration_data}.
+#'   for other genomic chunks (see \code{migration_results} to pick up the model
+#'   with the results in other chunks.).
+#' @param par integer, default \code{parallel::detectCores() - 2}, two less than
+#'   the available cores. Maximum number of cores to allocate for model fitting;
+#'   the number of cores per chain will be \code{par}/\code{N_chains}.
+#' @param migration_data list containing data for migration model, in the format
+#'   produced by \code{\link{prepare_mig_data}}\code{$migration_data}.
 #' @param stan_data list containing data for the stan GEA model fitting, in the
 #'   format produced by \code{\link{prepare_mig_data}}\code{$stan_data}.
 #' @param nloci integer, number of loci in the source data for the stan model.
@@ -100,14 +100,20 @@
 #' @param beta_summary beta parameter summary data from a fit GEA model, as
 #'   produced by \code{\link{beta_summary}}\code{$beta_summary}.
 #' @param env_names character, vector of environmental variable names.
-#' @param env_colors character or NULL, default NULL. Vector of colors for environmental variables.
+#' @param env_colors character or NULL, default NULL. Vector of colors for
+#'   environmental variables.
 #'
 #' @author William Hemstrom, Nikunj Goel
 #'
 #' @export
 #' @name mechGEA
-#' @aliases plot_gea plot_migration prepare_mig_data estimate_migration run_stan_gea_model estimate_neff beta_summary
-#' @references Insert Goel et. al. ref here.
+#' @aliases plot_gea plot_migration prepare_mig_data estimate_migration
+#'   run_stan_gea_model estimate_neff beta_summary
+#' @references
+#' Goel, N., et al. (2026). Identifying adaptive variation in
+#' spatially structured populations using low-coverage whole-genome sequencing
+#' data. *Molecular Biology and Evolution*, 43(10), msag255.
+#' https://doi.org/10.1093/molbev/msag255
 NULL
 
 #' @export
