@@ -208,9 +208,32 @@ prepare_metadata <- function(sample_meta,
 
   patch <- ind_id <- lat <- lon <- ..targets <- NULL
 
+  # first things first--check the sorting and if it isn't OK. We don't want to re-sort,
+  # since the genotypes should be in the same order and that could cause issues
+
   # patch info per sample
   dt <- as.data.table(sample_meta)
-  patch_info <- dt[,.(patch, ind_id)]
+  patch_info <- dt[,.(ind_id, patch)]
+  in_blocks <- TRUE
+  observed <- character()
+  for(i in 1:nrow(patch_info)){
+    tpatch <- patch_info$patch[i]
+    if(tpatch %notin% observed){
+      observed <- c(observed, tpatch)
+      next
+    } else {
+      if(any(observed[-length(observed)] == tpatch)){
+        in_blocks <- FALSE
+      }
+    }
+  }
+
+  if(isFALSE(in_blocks)){
+    stop("Some observations are not in continous blocks by patch. Individuals in both the metadata AND the genotypic
+         data MUST be in blocks/sorted by patch.\n")
+  }
+
+
 
   # table of patches with x/y, sorted correctly
   # Coordinates
@@ -256,7 +279,7 @@ prepare_metadata <- function(sample_meta,
   }
 
   # return
-  ret <- list(patch_info = patch_info[,.(patch, ind_id)],
+  ret <- list(patch_info = patch_info[,.(ind_id, patch)],
               patches_xy = patch_xy,
               env = envs)
   return(lapply(ret, as.data.frame))

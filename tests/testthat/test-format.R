@@ -100,3 +100,20 @@ test_that("beagle2pl",{
   expect_equal(colnames(pl), colnames(example_gl$likelihoods)[c(101:200, 1:100)])
 
 })
+
+test_that("prepare_metadata",{
+
+  # test that the basic formatting is OK
+  input <- prepare_metadata(sample_metadata)
+
+  expect_equal(input$patch_info, example_gl$patch_info)
+  expect_equal(input$patches_xy, example_gl$patches_xy)
+  expect_equal(input$env, example_gl$env)
+
+  # test that unsorted data throws an error
+  test <- sample_metadata[sample(nrow(sample_metadata), nrow(sample_metadata), FALSE),]
+  expect_error(prepare_metadata(test), "continous blocks by patch")
+
+  #
+
+})
