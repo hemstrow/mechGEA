@@ -1,22 +1,33 @@
 test_that("gea plots",{
 
-  skip_if_not_installed("cmdstanr")
-  skip_on_cran()
-
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   phred <- beagle2pl(beagle, lines = 1:150)
 
   input_data <- prepare_metadata(sample_metadata)
 
-  res <- mechGEA(phred,
-                 patch_info = input_data$patch_info,
-                 patches_xy = input_data$patches_xy,
-                 migration_loci = 50,
-                 env = input_data$env,
-                 iter_sampling_gea = 100,
-                 iter_warmup_gea = 200,
-                 iter_sampling_mig = 100,
-                 iter_warmup_mig = 200)
+  # running these tests are tricky, because they require dependencies that
+  # are tough to install without the env script. As a result, we will run this
+  # on an interactive session and save results. Tests will only check pre-run
+  # results. This DOES mean we need to manually run the tests when updates can
+  # cause issues, which stinks.
+  tfile <- test_path("testdata", "small_example_results.RDS")
+  if(interactive()){
+    res <- mechGEA(phred,
+                   patch_info = input_data$patch_info,
+                   patches_xy = input_data$patches_xy,
+                   migration_loci = 50,
+                   env = input_data$env,
+                   iter_sampling_gea = 100,
+                   iter_warmup_gea = 200,
+                   iter_sampling_mig = 100,
+                   iter_warmup_mig = 200)
+    saveRDS(res, tfile)
+  } else {
+    skip_if_not(file.exists(tfile),
+                "test data not available")
+
+    res <- readRDS(tfile)
+  }
 
   p <- plot_gea(stan_data = res$stan_and_migration_data$stan_data,
                 migration_results = res$migration_results,
@@ -48,22 +59,33 @@ test_that("gea plots",{
 })
 
 test_that("migration_plots",{
-  skip_if_not_installed("cmdstanr")
-  skip_on_cran()
 
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   phred <- beagle2pl(beagle, lines = 1:150)
 
   input_data <- prepare_metadata(sample_metadata)
 
-  res <- mechGEA(phred,
-                 patch_info = input_data$patch_info,
-                 patches_xy = input_data$patches_xy,
-                 migration_loci = 50,
-                 env = input_data$env,
-                 iter_sampling_mig = 100,
-                 iter_warmup_mig = 200,
-                 stop_after_migration = TRUE)
+  # running these tests are tricky, because they require dependencies that
+  # are tough to install without the env script. As a result, we will run this
+  # on an interactive session and save results. Tests will only check pre-run
+  # results. This DOES mean we need to manually run the tests when updates can
+  # cause issues, which stinks.
+  tfile <- test_path("testdata", "small_example_results.RDS")
+  if(interactive()){
+    res <- mechGEA(phred,
+                   patch_info = input_data$patch_info,
+                   patches_xy = input_data$patches_xy,
+                   migration_loci = 50,
+                   env = input_data$env,
+                   iter_sampling_mig = 100,
+                   iter_warmup_mig = 200,
+                   stop_after_migration = TRUE)
+  } else {
+    skip_if_not(file.exists(tfile),
+                "test data not available")
+
+    res <- readRDS(tfile)
+  }
 
 
   p <- plot_migration(migration_results = res$migration_results,
