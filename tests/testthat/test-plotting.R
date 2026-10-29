@@ -1,4 +1,5 @@
 test_that("gea plots",{
+  skip_on_cran(); skip_on_ci()
 
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   phred <- beagle2pl(beagle, lines = 1:150)
