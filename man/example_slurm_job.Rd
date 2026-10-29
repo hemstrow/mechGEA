@@ -12,6 +12,7 @@ example_slurm_job(
   conda_env = "mechGEA",
   control_file_prefix = "./control/",
   env_mean_method = "unweighted",
+  idp = 1,
   ...
 )
 }
@@ -43,6 +44,10 @@ located. Either a directory ending in "/" or a file basename prefix.}
 \item{env_mean_method}{character, default "unweighted". Weighting scheme for
 mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
 See \code{\link{prepare_metadata}} for details and options.}
+
+\item{idp}{integer, default 1. Inverse-distance weighting provided if using
+weighted env means. See \code{\link{prepare_metadata}} for details and
+options.}
 
 \item{...}{additional arguments passed to \code{\link{mechGEA}}.}
 }

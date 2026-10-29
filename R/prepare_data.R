@@ -200,11 +200,33 @@ get_chunks <- function(beagle_file,
 
 #' Format metadata for analysis.
 #'
-#' @export
+#' From a \code{\link[sf]{sf}} object containing patch and individual IDs as
+#' well as environmental variables, create the three metadata input files
+#' required by \code{\link{mechGEA}}. An example input is in
+#' \code{\link{sample_metadata}}. An example output is in
+#' \code{\link{example_gl}}.
 #'
+#' @param sample_meta \code{\link[sf]{sf}} POINT geometry containing two
+#'   required columns: \code{patch} containing patch IDs and \code{ind_id}
+#'   containing individual IDs. Additional columns specify named environmental
+#'   variables. Patches must be in continuous blocks and sorted identically to
+#'   the likelihood data also provided to \code{\link{mechGEA}}. NOTE:
+#'   \code{.beagle} or \code{.beagle.gz} files can be re-sorted on import using
+#'   the \code{\link{beagle2pl}} function.
+#' @param env_mean_method character, default "unweighted". Specifies how
+#'   environmental variables are averaged across samples. Options:
+#'   * "unweighted": direct means across samples within patches.
+#'   * "weighted": inverse-distance scaled averages. Scaling power given by
+#'     \code{idp}.
+#' @param idp integer, default 1. Inverse-distance power used for weighted
+#'   environmental averages. Ignored if \code{env_mean_method == "weighted"}.
+#'   Higher values give less weight to points distant from the patch centroid.
+#'
+#' @export
 #' @author William Hemstrom
 prepare_metadata <- function(sample_meta,
-                             env_mean_method = "unweighted"){
+                             env_mean_method = "unweighted",
+                             idp = 1){
 
   patch <- ind_id <- lat <- lon <- ..targets <- NULL
 
@@ -269,7 +291,7 @@ prepare_metadata <- function(sample_meta,
           formula = as.formula(paste0(targets[j], " ~ 1")),
           locations = this_sf,
           newdata = this_center,
-          idp = 2)[[1]]
+          idp = idp)[[1]]
 
         set(envs, i = i, j = targets[[j]], value = idw_result)
       }

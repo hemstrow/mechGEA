@@ -114,6 +114,34 @@ test_that("prepare_metadata",{
   test <- sample_metadata[sample(nrow(sample_metadata), nrow(sample_metadata), FALSE),]
   expect_error(prepare_metadata(test), "continous blocks by patch")
 
-  #
+  # weighted vs unweighted
+  ## generate varaince in coords
+  mx <- c(-160, -165)
+  my <- c(45, 50)
+  n <- nrow(sample_metadata)
+  set.seed(42)
+  ndt <- data.table(patch = c(rep("patch_001", n/2),
+                              rep("patch_002", n/2)),
+                    ind_id = sample_metadata$ind_id,
+                    lon = c(rnorm(n/2, mx[1], .5),
+                            rnorm(n/2, mx[2], .5)),
+                    lat = c(rnorm(n/2, my[1], .5),
+                            rnorm(n/2, my[2], .5)),
+                    env1 = rnorm(n, 0, 1),
+                    env2 = rnorm(n, 0, 1))
+  ndt <- sf::st_as_sf(ndt, coords = c("lon", "lat"), crs = sf::st_crs(sample_metadata))
+
+  uw <- prepare_metadata(ndt)
+  expect_equal(uw$env$env1, c(mean(ndt[ndt$patch == "patch_001",]$env1),
+                              mean(ndt[ndt$patch == "patch_002",]$env1)))
+  expect_equal(uw$env$env2, c(mean(ndt[ndt$patch == "patch_001",]$env2),
+                              mean(ndt[ndt$patch == "patch_002",]$env2)))
+  w1 <- prepare_metadata(ndt, env_mean_method = "weighted", idp = 1)
+  w4 <- prepare_metadata(ndt, env_mean_method = "weighted", idp = 4)
+  w0 <- prepare_metadata(ndt, env_mean_method = "weighted", idp = 0)
+  d1 <- sum((uw$env[,-1] - w1$env[,-1])^2)
+  d4 <- sum((uw$env[,-1] - w4$env[,-1])^2)
+  expect_true(d1 < d4) # lower idp should always be closer to straight means
+  expect_equal(uw$env, w0$env) # with zero weight, will be the mean
 
 })

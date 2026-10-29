@@ -259,6 +259,21 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
 prepare_mig_data <- function(Phred, patch_info, patches_xy, env, migration_loci,
                              N_sim_mig, seed = 42) {
 
+  msg <- character()
+  # env
+  sds <- matrixStats::colSds(as.matrix(env[,!colnames(env) == "patch"]))
+  if(any(round(sds, 3) != 1)){
+    msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column standard deviations are not 1.")
+  }
+  cmeans <- matrixStats::colMeans2(as.matrix(env[,!colnames(env) == "patch"]))
+  if(any(round(cmeans, 3) != 0)){
+    msg <- c(msg, "All environmental variables are expected to be Z-scaled: (X - mean(X))/sd(X). Some column means are not 0.")
+  }
+
+  if(length(msg) > 0){
+    stop(paste0(msg, collapse = "\n"))
+  }
+
   individuals <- patch_info; coordinates <- patches_xy; env_data <- env
   N_sim <- N_sim_mig
   rm(patch_info, patches_xy, env, N_sim_mig)

@@ -27,6 +27,9 @@
 #' @param env_mean_method character, default "unweighted". Weighting scheme for
 #'   mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
 #'   See \code{\link{prepare_metadata}} for details and options.
+#' @param idp integer, default 1. Inverse-distance weighting provided if using
+#'   weighted env means. See \code{\link{prepare_metadata}} for details and
+#'   options.
 #' @param ... additional arguments passed to \code{\link{mechGEA}}.
 #'
 #' @export
@@ -37,6 +40,7 @@ example_slurm_job <- function(beagle_files,
                               conda_env = "mechGEA",
                               control_file_prefix = "./control/",
                               env_mean_method = "unweighted",
+                              idp = 1,
                               ...){
 
   # set the resources from arg too
@@ -89,7 +93,7 @@ example_slurm_job <- function(beagle_files,
                   paste0(c("patch_info", "patches_xy", "env"), collapse = ", "), "\n"))
     }
   } else {
-    sample_metadata <- prepare_metadata(sample_metadata, env_mean_method)
+    sample_metadata <- prepare_metadata(sample_metadata, env_mean_method, idp = idp)
     smpath <- normalizePath(paste0(control_file_prefix, "sample_metadata.RDS"), mustWork = FALSE)
     saveRDS(sample_metadata, smpath)
     sample_metadata <- smpath
@@ -132,8 +136,19 @@ example_slurm_job <- function(beagle_files,
 
 #' Prune correlated (environmental) variables.
 #'
+#' Conducts pruning of envirnonmental values according to correlation by
+#' removing the variable correlated with the most other variables iteratively
+#' until no correlated pairs remain. Ties removed at random.
+#'
 #' @param envs numeric matrix/data.frame/data.table of
-#' @param r2 numeric, default 0.7. The
+#' @param r2 numeric, default 0.7. Threshold to use for prunning; correlations
+#'   (\code{\link{cor}}) values higher than \code{r2} will result in the removal
+#'   of envs.
+#' @param scale logical, default TRUE. If TRUE, environmental vairables will
+#'   be scaled to mean 0, sd 1. This is recommended for subsequent model fitting
+#'   by \code{\link{mechGEA}}.
+#' @param seed integer, default a random number between 1 and 10,000. Seed to
+#'   use for breaking ties.
 #'
 #' @export
 #' @author William Hemstrom

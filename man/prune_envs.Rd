@@ -9,7 +9,7 @@ prune_envs(envs, r2 = 0.7, scale = TRUE, seed = floor(runif(1, 1, 10000)))
 \arguments{
 \item{envs}{numeric matrix/data.frame/data.table of}
 
-\item{r2}{numeric, default 0.7. The}
+\item{r2}{numeric, default 0.7. Threshold to use for prunning,}
 }
 \description{
 Prune correlated (environmental) variables.

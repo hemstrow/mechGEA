@@ -4,10 +4,35 @@
 \alias{prepare_metadata}
 \title{Format metadata for analysis.}
 \usage{
-prepare_metadata(sample_meta, env_mean_method = "unweighted")
+prepare_metadata(sample_meta, env_mean_method = "unweighted", idp = 1)
+}
+\arguments{
+\item{sample_meta}{\code{\link[sf]{sf}} POINT geometry containing two
+required columns: \code{patch} containing patch IDs and \code{ind_id}
+containing individual IDs. Additional columns specify named environmental
+variables. Patches must be in continuous blocks and sorted identically to
+the likelihood data also provided to \code{\link{mechGEA}}. NOTE:
+\code{.beagle} or \code{.beagle.gz} files can be re-sorted on import using
+the \code{\link{beagle2pl}} function.}
+
+\item{env_mean_method}{character, default "unweighted". Specifies how
+environmental variables are averaged across samples. Options:
+\itemize{
+\item "unweighted": direct means across samples within patches.
+\item "weighted": inverse-distance scaled averages. Scaling power given by
+\code{idp}.
+}}
+
+\item{idp}{integer, default 1. Inverse-distance power used for weighted
+environmental averages. Ignored if \code{env_mean_method == "weighted"}.
+Higher values give less weight to points distant from the patch centroid.}
 }
 \description{
-Format metadata for analysis.
+From a \code{\link[sf]{sf}} object containing patch and individual IDs as
+well as environmental variables, create the three metadata input files
+required by \code{\link{mechGEA}}. An example input is in
+\code{\link{sample_metadata}}. An example output is in
+\code{\link{example_gl}}.
 }
 \author{
 William Hemstrom
