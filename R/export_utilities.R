@@ -19,7 +19,7 @@
 #' @param conda_env character, default mechGEA. A named \code{conda} environment
 #'   to load at the start of the script. Note that if a conda module etc. needs
 #'   to be loaded for this env to load, the resulting SLURM array-job shell
-#'   script must be modified. See \code{\link{setup_likeGEA_env}} for help
+#'   script must be modified. See \code{\link{setup_mechGEA_env}} for help
 #'   setting up a working \code{conda} environment.
 #' @param control_file_prefix character, default "./control/". A prefix indicating
 #'   where the control files (including meta-data and the shell script) will be
@@ -27,6 +27,9 @@
 #' @param env_mean_method character, default "unweighted". Weighting scheme for
 #'   mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
 #'   See \code{\link{prepare_metadata}} for details and options.
+#' @param prune_r2 numeric or FALSE, default 0.7. If numeric, the r2 by which
+#'   to prune environmental variables to ensure all are uncorrelated. Scaling
+#'   is always set to TRUE; to scale without pruning set prune_r2 to 1.
 #' @param idp integer, default 1. Inverse-distance weighting provided if using
 #'   weighted env means. See \code{\link{prepare_metadata}} for details and
 #'   options.
@@ -34,12 +37,37 @@
 #'
 #' @export
 #' @author William Hemstrom
+#'
+#' @examples
+#' # first, chunk a beagle file
+#' beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+#' chunks <- get_chunks(beagle, loci_per_chunk = 150)
+#'
+#' # next, setup a conda env
+#' \dontrun{
+#' setup_mechGEA_env("mechGEA")
+#' }
+#'
+#' # then, create the slurm job
+#' slurm_script <- example_slurm_job(
+#'   beagle_files = chunks,
+#'   sample_metadata = sample_metadata, # the example metadata sf object
+#'   conda_env = "mechGEA",
+#'   control_file_prefix = "./control/"
+#'   env_mean_method = "unweighted", # unweighted env averages
+#'   prune_r2 = 0.7 # prune envs
+#'   )
+#'
+#' # lastly, edit the resulting slurm script with cluster/resource specific
+#' # needs and submit the job.
+#'
 example_slurm_job <- function(beagle_files,
                               sample_metadata,
                               output_dir = ".",
                               conda_env = "mechGEA",
                               control_file_prefix = "./control/",
                               env_mean_method = "unweighted",
+                              prune_r2 = .7,
                               idp = 1,
                               ...){
 
@@ -84,6 +112,10 @@ example_slurm_job <- function(beagle_files,
   if(is.list(sample_metadata) & !methods::is(sample_metadata, "sf")){
     if(all(c("patch_info", "patches_xy", "env") %in% names(sample_metadata))){
 
+      if(!isFALSE(prune_r2)){
+        sample_metadata$envs <- prune_envs(sample_metadata$env, r2 = prune_r2)
+      }
+
       smpath <- normalizePath(paste0(control_file_prefix, "sample_metadata.RDS"), mustWork = FALSE)
       saveRDS(sample_metadata[c("patch_info", "patches_xy", "env")], smpath)
       sample_metadata <- smpath
@@ -94,6 +126,9 @@ example_slurm_job <- function(beagle_files,
     }
   } else {
     sample_metadata <- prepare_metadata(sample_metadata, env_mean_method, idp = idp)
+    if(!isFALSE(prune_r2)){
+      sample_metadata$envs <- prune_envs(sample_metadata$env, r2 = prune_r2)
+    }
     smpath <- normalizePath(paste0(control_file_prefix, "sample_metadata.RDS"), mustWork = FALSE)
     saveRDS(sample_metadata, smpath)
     sample_metadata <- smpath

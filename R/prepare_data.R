@@ -109,6 +109,11 @@ beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 #' @export
 #'
 #' @author William Hemstrom
+#' @examples
+#' # generate 100 SNP chunks
+#' beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+#' get_chunks(beagle, loci_per_chunk = 100)
+#'
 get_chunks <- function(beagle_file,
                        loci_per_chunk = 10000,
                        max_read = 50000){

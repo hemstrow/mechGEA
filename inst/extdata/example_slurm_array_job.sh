@@ -23,7 +23,7 @@
 #
 # As noted in the example_slurm_job() function documentation, this all assumes
 # that a correct mechGEA conda environment is set-up and ready-to-use. The
-# package's "setup_likeGEA_env" function is a good way to acheive this without
+# package's "setup_mechGEA_env" function is a good way to acheive this without
 # versioning/compilation errors.
 #
 # Remember that mechGEA can automatically partition/split beagle files for you

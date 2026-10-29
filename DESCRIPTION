@@ -36,10 +36,12 @@ Imports:
     tictoc
 Suggests:
     reticulate,
+    rnaturalearthhires,
     testthat (>= 3.0.0),
     xfun
 Additional_repositories:
-    https://stan-dev.r-universe.dev/
+    https://stan-dev.r-universe.dev/,
+    https://ropensci.r-universe.dev
 Depends:
     cmdstanr,
     data.table,
