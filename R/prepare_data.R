@@ -298,7 +298,7 @@ prepare_metadata <- function(sample_meta,
           newdata = this_center,
           idp = idp)[[1]]
 
-        set(envs, i = i, j = targets[[j]], value = idw_result)
+        data.table::set(envs, i = i, j = targets[[j]], value = idw_result)
       }
     }
   } else {

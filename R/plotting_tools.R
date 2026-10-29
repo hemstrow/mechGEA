@@ -178,7 +178,9 @@ plot_gea <- function(stan_data,
                      env_names,
                      CI = 0.95,
                      env_colors = NULL){
-  Env_var <- Locus <- NULL
+  Env_var <- Locus <- SNP <- . <- nlogp <- Env <- color <- migration_off <- migration_on <- NULL
+  type <- value <- variable <- facet <- muk <- `No migration` <- NULL
+  `Mean-field (1st correction)` <- logit <- env_value <- p_logit <- NULL
 
   ## ---- Load -----------------------------------------------------------------
   data         <- stan_data; rm(stan_data)
@@ -225,7 +227,7 @@ plot_gea <- function(stan_data,
   mbMlogp <- as.data.table(beta_Mlogp)
   colnames(mbMlogp) <- env_names
   mbMlogp[,SNP := 1:.N]
-  mbMlogp <- melt(mbMlogp, id.vars = "SNP", value.name = "nlogp", variable.name = "Env")
+  mbMlogp <- data.table::melt(mbMlogp, id.vars = "SNP", value.name = "nlogp", variable.name = "Env")
   p_man <- ggplot2::ggplot(mbMlogp) +
     ggplot2::geom_point(ggplot2::aes(x = SNP, y = nlogp),
                         color = "grey70", size = .5) +
@@ -363,7 +365,7 @@ plot_gea <- function(stan_data,
       x <- as.data.table(x)
       colnames(x) <- paste0("Locus ", bal_table$Locus)
       x <- cbind(x, patch = 1:nrow(data$Env))
-      x <- melt(as.data.table(x), id.vars = "patch")
+      x <- data.table::melt(data.table::as.data.table(x), id.vars = "patch")
     }
 
     env_mat <- melt_ptable(data$Env[, bal_table$Env])
@@ -385,7 +387,7 @@ plot_gea <- function(stan_data,
                               muk = value,
                               Locus = variable)
 
-    cast_msb <- dcast(msb_data, patch + Locus + env_value + Env ~ type, value.var = "muk")
+    cast_msb <- data.table::dcast(msb_data, patch + Locus + env_value + Env ~ type, value.var = "muk")
 
 
     # plot a multi-page pdf and generate per-page ggplots.
@@ -394,13 +396,13 @@ plot_gea <- function(stan_data,
 
     panels_per_page <- 16
     total_pages <- ceiling(nrow(panels)/panels_per_page)
-    set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
+    data.table::set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
     panels[,facet := paste0(Locus, "_", Env)]
 
     msb_plots <- vector("list", length(unique(panels$page)))
     names(msb_plots) <- paste0("page_", unique(panels$page))
 
-    pdf("plot/migration_sel_balance.pdf", width = 8.5, height = 9.4)
+    grDevices::pdf("plot/migration_sel_balance.pdf", width = 8.5, height = 9.4)
 
     for(i in 1:length(msb_plots)){
       tpd <- msb_data[paste0(Locus, "_", Env) %in% panels[panels$page == i,]$facet]
@@ -427,7 +429,7 @@ plot_gea <- function(stan_data,
 
       print(msb_plots[[i]])
     }
-    dev.off()
+    grDevices::dev.off()
     cat("Saved: plot/migration_sel_balance.pdf\n")
 
 
@@ -465,7 +467,7 @@ plot_gea <- function(stan_data,
     }
 
 
-    mod_pc <- cmdstan_model(
+    mod_pc <- cmdstanr::cmdstan_model(
       "stan/posterior_check.stan",
       cpp_options = list(stan_threads = TRUE)
     )
@@ -492,10 +494,10 @@ plot_gea <- function(stan_data,
 
     # format data for plotting
     melt_pmean <- function(x){
-      x <- as.data.table(t(x))
+      x <- data.table::as.data.table(t(x))
       colnames(x) <- paste0("Locus ", inferred$Locus)
       x[,patch := paste0("patch_", 1:nrow(data$Env))]
-      return(melt(x, id.vars = "patch"))
+      return(data.table::melt(x, id.vars = "patch"))
     }
 
     p_mean <- melt_pmean(p_mean)
@@ -519,13 +521,13 @@ plot_gea <- function(stan_data,
     # plot the associations
     panels_per_page <- 16
     total_pages <- ceiling(nrow(panels)/panels_per_page)
-    set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
+    data.table::set(panels, i = 1:nrow(panels), j = "page", value = rep(1:total_pages, each = panels_per_page)[1:nrow(panels)])
     panels[,facet := paste0(Locus, "_", Env)]
 
     asso_plots <- vector("list", length(unique(panels$page)))
     names(asso_plots) <- paste0("page_", unique(panels$page))
 
-    pdf("plot/GE_association.pdf", width = 8, height = 9.4)
+    grDevices::pdf("plot/GE_association.pdf", width = 8, height = 9.4)
 
     for(i in 1:length(asso_plots)){
       tpd <- p_mean[paste0(Locus, "_", Env) %in% panels[panels$page == i,]$facet]
@@ -547,7 +549,7 @@ plot_gea <- function(stan_data,
       .suppress_specific_warning(print(asso_plots[[i]]), "outside the scale range")
 
     }
-    dev.off()
+    grDevices::dev.off()
     cat("Saved: plot/GE_association.pdf\n")
   }
 
