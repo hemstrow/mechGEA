@@ -50,7 +50,7 @@ as produced by something like \code{ANGSD}'s \code{doGlf}.
 # example code
 
 beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
-pl <- function(beagle,
+pl <- beagle2pl(beagle,
                lines = 1:100) # first 100 lines
 
 }

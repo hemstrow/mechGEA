@@ -41,7 +41,7 @@
 #' # example code
 #'
 #' beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
-#' pl <- function(beagle,
+#' pl <- beagle2pl(beagle,
 #'                lines = 1:100) # first 100 lines
 #'
 beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
