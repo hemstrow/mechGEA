@@ -76,8 +76,8 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
   ## Political boundaries (vector data — loads instantly from rnaturalearth)
   world  <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
   sf::sf_use_s2(FALSE)   # disable spherical geometry to avoid invalid-edge errors on ne_states
-  states <- rnaturalearth::ne_states(returnclass = "sf") |>
-    sf::st_crop(xmin = xlim[1], xmax = xlim[2], ymin = ylim[1], ymax = ylim[2])
+  .suppress_specific_warning(states <- rnaturalearth::ne_states(returnclass = "sf") |>
+    sf::st_crop(xmin = xlim[1], xmax = xlim[2], ymin = ylim[1], ymax = ylim[2]), "spatially constant")
   sf::sf_use_s2(TRUE)    # re-enable for everything else
 
   ## N_ind_per_patch already loaded from data$N_table above
@@ -124,6 +124,9 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
       panel.border = ggplot2::element_rect(color = "black", fill = NA, linewidth = 1)
     )
 
+  if(!dir.exists("plot")){
+    dir.create("plot")
+  }
   ggplot2::ggsave("plot/Migration_map.pdf", map, width = 9, height = 8)
   cat("Saved: plot/Migration_map.pdf\n")
 
@@ -251,6 +254,9 @@ plot_gea <- function(stan_data,
                                        color = "grey30", inherit.aes = FALSE) +
     ggplot2::theme_bw()
 
+  if(!dir.exists("plot")){
+    dir.create("plot")
+  }
   ggplot2::ggsave("plot/manhattan.pdf", width = 10, height = 5)
   cat("Saved: plot/manhattan.pdf\n")
 
@@ -540,7 +546,7 @@ plot_gea <- function(stan_data,
                                     values = unique(env_colors[inferred$Env_var])) +
         ggplot2::ylab(paste0("logit(p)"))
 
-      print(asso_plots[[i]])
+      .suppress_specific_warning(print(asso_plots[[i]]), "outside the scale range")
 
     }
     dev.off()

@@ -29,6 +29,7 @@ Imports:
     parallel,
     posterior,
     rnaturalearth,
+    rnaturalearthdata,
     rstan,
     R.utils,
     sf,

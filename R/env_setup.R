@@ -96,7 +96,7 @@ setup_mechGEA_env <- function(name = "mechGEA", conda_path = "DEFAULT"){
                                            "r-terra")) # needed for rnaturalearth later
 
     # bread, requires direct activation of a R cmd inside the env.
-    pkg_inst <- "install.packages(c('bread', 'geodist', 'dplyr', 'gstat', 'stringi', 'rnaturalearth', 'rnaturalearthdata', 'codetools', 'xfun', 'dreamerr', 'ggh4x'), repos = 'https://cloud.r-project.org')"
+    pkg_inst <- "install.packages(c('bread', 'geodist', 'dplyr', 'gstat', 'stringi', 'rnaturalearth', 'rnaturalearthdata', 'codetools', 'xfun', 'dreamerr', 'ggh4x', 'rnaturalearthdata'), repos = 'https://cloud.r-project.org')"
     pkg_inst <- paste("Rscript -e", shQuote(pkg_inst))
 
     reticulate::conda_run2(

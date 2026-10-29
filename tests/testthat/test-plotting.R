@@ -12,6 +12,7 @@ test_that("gea plots",{
   # cause issues, which stinks.
   tfile <- test_path("testdata", "small_example_results.RDS")
   if(interactive()){
+    set.seed(42)
     res <- mechGEA(phred,
                    patch_info = input_data$patch_info,
                    patches_xy = input_data$patches_xy,
@@ -42,7 +43,7 @@ test_that("gea plots",{
   expect_true(all(unlist(lapply(p$migration_selection_balance, methods::is, class = "ggplot"))))
   expect_true(all(unlist(lapply(p$association_plots, methods::is, class = "ggplot"))))
 
-  expect_true(sum(p$manhattan@data$value >= 4) == 5)
+  expect_equal(sum(p$manhattan@data$nlogp >= 4), 5)
   expect_equal(nrow(ggplot2::ggplot_build(p$migration_selection_balance[[1]])$layout$layout),
                nrow(ggplot2::ggplot_build(p$association_plots[[1]])$layout$layout))
 

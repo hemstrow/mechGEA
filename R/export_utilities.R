@@ -71,7 +71,8 @@ example_slurm_job <- function(beagle_files,
                               idp = 1,
                               ...){
 
-  # set the resources from arg too
+  #NOTE: set the resources from arg too?
+
 
   beagle_files <- normalizePath(beagle_files)
   bad_beagles <- !file.exists(beagle_files)
