@@ -751,14 +751,14 @@ run_stan_GEA_model <- function(stan_data,
   # DEV NOTE: should modify the function to take these as args at some point
   init_fun <- function() {
     list(
-      mu          = runif(data$N_locus, 0.4, 0.6),
-      kappa       = exp(rnorm(data$N_locus, log(1), 0.3)),
-      rho_tilda   = exp(rnorm(data$N_locus, log(1), 0.2)),
-      tau_unif    = runif(1, base::pi / 10, base::pi / 4),
-      c_square    = abs(rnorm(1, 1.3, 0.3)),
-      z_beta      = matrix(rnorm(data$N_env * data$N_locus, 0, 0.1),
+      mu          = stats::runif(data$N_locus, 0.4, 0.6),
+      kappa       = exp(stats::rnorm(data$N_locus, log(1), 0.3)),
+      rho_tilda   = exp(stats::rnorm(data$N_locus, log(1), 0.2)),
+      tau_unif    = stats::runif(1, base::pi / 10, base::pi / 4),
+      c_square    = abs(stats::rnorm(1, 1.3, 0.3)),
+      z_beta      = matrix(stats::rnorm(data$N_env * data$N_locus, 0, 0.1),
                            nrow = data$N_env, ncol = data$N_locus),
-      lambda_unif = matrix(runif(data$N_env * data$N_locus,
+      lambda_unif = matrix(stats::runif(data$N_env * data$N_locus,
                                  base::pi / 10, base::pi / 5),
                            nrow = data$N_env, ncol = data$N_locus)
     )

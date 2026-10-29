@@ -5,6 +5,9 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
                            mig_plot_topn = 2,
                            mig_plot_binsize = 1){
 
+  patch_from <- patch_to <- p1 <- p2 <- migration_rate <- lon_from <- lon_to <- lat_from <- lat_to <- NULL
+  mid_lon <- mid_lat <- mid_lon_bin <-mid_lat_bin <- mig_rate <- lon <- lat <- Distance <- Migration <- NULL
+
   data <- migration_data; rm(migration_data)
   DistM <- data$DistM
   M <- migration_results; rm(migration_results)
@@ -224,7 +227,7 @@ plot_gea <- function(stan_data,
   ymin <- min(beta_Mlogp, na.rm = TRUE)
   ymax <- max(c(beta_Mlogp, -log(1 - CI) + 1), na.rm = TRUE) + 1
 
-  mbMlogp <- as.data.table(beta_Mlogp)
+  mbMlogp <- data.table::as.data.table(beta_Mlogp)
   colnames(mbMlogp) <- env_names
   mbMlogp[,SNP := 1:.N]
   mbMlogp <- data.table::melt(mbMlogp, id.vars = "SNP", value.name = "nlogp", variable.name = "Env")
@@ -362,7 +365,7 @@ plot_gea <- function(stan_data,
 
 
     melt_ptable <- function(x){
-      x <- as.data.table(x)
+      x <- data.table::as.data.table(x)
       colnames(x) <- paste0("Locus ", bal_table$Locus)
       x <- cbind(x, patch = 1:nrow(data$Env))
       x <- data.table::melt(data.table::as.data.table(x), id.vars = "patch")

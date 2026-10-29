@@ -4,7 +4,12 @@
 \alias{prune_envs}
 \title{Prune correlated (environmental) variables.}
 \usage{
-prune_envs(envs, r2 = 0.7, scale = TRUE, seed = floor(runif(1, 1, 10000)))
+prune_envs(
+  envs,
+  r2 = 0.7,
+  scale = TRUE,
+  seed = floor(stats::runif(1, 1, 10000))
+)
 }
 \arguments{
 \item{envs}{numeric matrix/data.frame/data.table of}

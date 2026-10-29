@@ -3,7 +3,7 @@
 \docType{package}
 \name{mechGEA-package}
 \alias{mechGEA-package}
-\title{mechGEA: Mechanist Bayesian Genotype-Environment Association Analyses with Likelihoods.}
+\title{mechGEA: Mechanist Bayesian Genotype-Environment Association Analyses with Likelihoods}
 \description{
 A user-friendly interface for conducting Bayesian Genotype-Environment Association (GEA) tests with genotype-likelihood or pool-seq data, based on Goel et al. (2026)'s approaches incorporating migration rate estimation in spatially structured populations.
 }

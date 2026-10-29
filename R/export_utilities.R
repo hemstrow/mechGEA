@@ -61,6 +61,9 @@
 #' # lastly, edit the resulting slurm script with cluster/resource specific
 #' # needs and submit the job.
 #'
+#' # cleanup
+#' unlink("./control/", recursive = TRUE)
+#'
 example_slurm_job <- function(beagle_files,
                               sample_metadata,
                               output_dir = ".",
@@ -136,7 +139,6 @@ example_slurm_job <- function(beagle_files,
   }
 
   # read in the shell script
-  browser()
   path <- system.file("extdata", "example_slurm_array_job.sh", package = "mechGEA")
   sh <- paste0(control_file_prefix, "example_slurm_array_job.sh")
   sh <- normalizePath(sh, mustWork = FALSE)
@@ -157,7 +159,6 @@ example_slurm_job <- function(beagle_files,
 
 
   # substitute in the provided data
-  browser()
   xfun::gsub_file(sh, "BEAG_REPLACE", beagle_files)
   xfun::gsub_file(sh, "META_REPLACE", sample_metadata)
   xfun::gsub_file(sh, "PARAM_REPLACE", control_parmfile)
@@ -188,13 +189,15 @@ example_slurm_job <- function(beagle_files,
 #'
 #' @export
 #' @author William Hemstrom
-prune_envs <- function(envs, r2 = .7, scale = TRUE, seed = floor(runif(1, 1, 10000))){
+prune_envs <- function(envs, r2 = .7, scale = TRUE, seed = floor(stats::runif(1, 1, 10000))){
   #============sanity=========
   dreamerr::check_set_value(r2, "scalar NONA numeric GE{0} LT{1}")
   dreamerr::check_set_value(scale, "scalar NONA logical")
   dreamerr::check_set_value(seed, "scalar NONA integer")
   dreamerr::check_set_value(envs, "data.frame | matrix")
 
+
+  ABcor <- A <- B <- ..keeps <- NULL
 
   #===========run=============
   set.seed(seed)
@@ -212,7 +215,7 @@ prune_envs <- function(envs, r2 = .7, scale = TRUE, seed = floor(runif(1, 1, 100
   }
 
   # purge highly correlated envs
-  tcor <- cor(as.matrix(envs))
+  tcor <- stats::cor(as.matrix(envs))
   tcor <- abs(tcor)
   tcor[lower.tri(tcor, diag = TRUE)] <- 0
   bad_pairs <- tcor >= r2
@@ -224,7 +227,7 @@ prune_envs <- function(envs, r2 = .7, scale = TRUE, seed = floor(runif(1, 1, 100
   while(nrow(bad_pairs) > 0){
     worst <- table(c(bad_pairs$A, bad_pairs$B))
     worst <- worst[worst == max(worst)]
-    purged <- rmultinom(1, 1, prob = rep(1/length(worst), length(worst)))
+    purged <- stats::rmultinom(1, 1, prob = rep(1/length(worst), length(worst)))
     purged <- names(worst)[which(purged == 1)]
 
     bad_pairs <- bad_pairs[A != purged & B != purged,]

@@ -84,6 +84,9 @@ slurm_script <- example_slurm_job(
 # lastly, edit the resulting slurm script with cluster/resource specific
 # needs and submit the job.
 
+# cleanup
+unlink("./control/", recursive = TRUE)
+
 }
 \author{
 William Hemstrom

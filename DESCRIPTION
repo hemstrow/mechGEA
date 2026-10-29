@@ -1,5 +1,5 @@
 Package: mechGEA
-Title: Mechanist Bayesian Genotype-Environment Association Analyses with Likelihoods.
+Title: Mechanist Bayesian Genotype-Environment Association Analyses with Likelihoods
 Version: 0.0.0.9000
 Authors@R: 
     c(person("William", "Hemstrom", email = "hemstrow@gmail.com", role = c("aut", "cre")),
@@ -16,6 +16,7 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
 Imports:
     bread,
+    cmdstanr,
     cowplot,
     dplyr,
     dreamerr,
@@ -46,7 +47,6 @@ Additional_repositories:
     https://stan-dev.r-universe.dev/,
     https://ropensci.r-universe.dev
 Depends:
-    cmdstanr,
     data.table,
     R (>= 3.6.0)
 LazyData: true

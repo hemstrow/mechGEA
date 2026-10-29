@@ -47,27 +47,27 @@ test_that("get_chunks",{
 test_that("env pruning",{
   set.seed(123122)
   # generate correlated envs
-  X <- rnorm(100)
+  X <- stats::rnorm(100)
 
   # Create Y as a linear combination to inject correlation
-  r <- rnorm(40, ifelse(rbinom(20, 1, .5) == 1, .9, -.7), .2)
+  r <- stats::rnorm(40, ifelse(rbinom(20, 1, .5) == 1, .9, -.7), .2)
   r[r >= 1] <- .99999
   r[r <= -1] <- -.99999
   Y <- matrix(0, 100, length(r) + 1)
   Y[,1] <- X
   for(i in 2:ncol(Y)){
-    Y[,i] <- r[i-1] * Y[,i-1] + sqrt(1 - r[i-1]^2) * rnorm(100)
+    Y[,i] <- r[i-1] * Y[,i-1] + sqrt(1 - r[i-1]^2) * stats::rnorm(100)
   }
-  Y <- as.data.table(Y)
+  Y <- data.table::as.data.table(Y)
   colnames(Y) <- paste0("env", 1:ncol(Y))
 
 
   # test
-  ty <- cor(Y)
+  ty <- stats::cor(Y)
   ty[ty == 1] <- 0
   expect_true(max(abs(ty)) >= .6)
   res <- prune_envs(Y, r2 = .7, seed = 42)
-  tx <- cor(res)
+  tx <- stats::cor(res)
   tx[tx == 1] <- 0
   expect_true(max(abs(tx)) <= .7)
 
@@ -123,12 +123,12 @@ test_that("prepare_metadata",{
   ndt <- data.table(patch = c(rep("patch_001", n/2),
                               rep("patch_002", n/2)),
                     ind_id = sample_metadata$ind_id,
-                    lon = c(rnorm(n/2, mx[1], .5),
-                            rnorm(n/2, mx[2], .5)),
-                    lat = c(rnorm(n/2, my[1], .5),
-                            rnorm(n/2, my[2], .5)),
-                    env1 = rnorm(n, 0, 1),
-                    env2 = rnorm(n, 0, 1))
+                    lon = c(stats::rnorm(n/2, mx[1], .5),
+                            stats::rnorm(n/2, mx[2], .5)),
+                    lat = c(stats::rnorm(n/2, my[1], .5),
+                            stats::rnorm(n/2, my[2], .5)),
+                    env1 = stats::rnorm(n, 0, 1),
+                    env2 = stats::rnorm(n, 0, 1))
   ndt <- sf::st_as_sf(ndt, coords = c("lon", "lat"), crs = sf::st_crs(sample_metadata))
 
   uw <- prepare_metadata(ndt)

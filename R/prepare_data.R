@@ -112,7 +112,8 @@ beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 #' @examples
 #' # generate 100 SNP chunks
 #' beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
-#' get_chunks(beagle, loci_per_chunk = 100)
+#' chunks <- get_chunks(beagle, loci_per_chunk = 100)
+#' file.remove(chunks) # remove the chunked files for the example only.
 #'
 get_chunks <- function(beagle_file,
                        loci_per_chunk = 10000,
@@ -233,13 +234,13 @@ prepare_metadata <- function(sample_meta,
                              env_mean_method = "unweighted",
                              idp = 1){
 
-  patch <- ind_id <- lat <- lon <- ..targets <- NULL
+  patch <- ind_id <- lat <- lon <- ..targets <- . <- NULL
 
   # first things first--check the sorting and if it isn't OK. We don't want to re-sort,
   # since the genotypes should be in the same order and that could cause issues
 
   # patch info per sample
-  dt <- as.data.table(sample_meta)
+  dt <- data.table::as.data.table(sample_meta)
   patch_info <- dt[,.(ind_id, patch)]
   in_blocks <- TRUE
   observed <- character()
@@ -283,7 +284,7 @@ prepare_metadata <- function(sample_meta,
     targets <- c("patch", targets)
     .fix..call(envs <- envs[,..targets])
   } else if(env_mean_method == "weighted"){ # for weighted (idw); relies on gstat
-    envs <- copy(patch_xy)[,1]
+    envs <- data.table::copy(patch_xy)[,1]
     for(i in targets) envs[[i]] <- 0
 
     # loop through and get dist to centroid for each point
@@ -293,7 +294,7 @@ prepare_metadata <- function(sample_meta,
 
       for(j in 1:length(targets)){
         idw_result <- gstat::idw(
-          formula = as.formula(paste0(targets[j], " ~ 1")),
+          formula = stats::as.formula(paste0(targets[j], " ~ 1")),
           locations = this_sf,
           newdata = this_center,
           idp = idp)[[1]]

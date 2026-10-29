@@ -48,7 +48,7 @@ test_that("full pipeline",{
   expect_equal(dim(res$Neff_results$G_eff_ana), c(150, 20))
   expect_equal(dim(res$Neff_results$TwoN_eff_stan), c(150, 20))
   expect_equal(dim(res$Neff_results$TwoN_eff_ana), c(150, 20))
-  expect_true(cor(as.numeric(res$Neff_results$G_eff_stan), as.numeric(res$Neff_results$G_eff_ana)) > 0.95) # should be pretty correlated
+  expect_true(stats::cor(as.numeric(res$Neff_results$G_eff_stan), as.numeric(res$Neff_results$G_eff_ana)) > 0.95) # should be pretty correlated
   expect_true(is.numeric(res$Neff_results$Neff_mean))
   expect_true(length(res$Neff_results$Neff_mean) == 1)
   expect_true(res$Neff_results$Neff_mean <= 1)

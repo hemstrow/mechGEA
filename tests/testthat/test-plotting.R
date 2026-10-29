@@ -51,7 +51,7 @@ test_that("gea plots",{
   # pvals
   pvals <- p$SNP_pvalues
   senvgrid <- expand.grid(Locus = 1:150, env = names(input_data$env)[-1])
-  senvgrid <- as.data.table(senvgrid)
+  senvgrid <- data.table::as.data.table(senvgrid)
   senvgrid[,facet := paste0(Locus, "_", env)]
   expect_identical(sort(paste0(pvals$SNP, "_", pvals$Env)),
                    sort(senvgrid$facet)) # everything accounted for?

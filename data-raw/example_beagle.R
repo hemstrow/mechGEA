@@ -22,7 +22,7 @@ fl3 <- matrix(fl[,3], nrow = nrow(gl))
 fl <- cbind(fl1, fl2, fl3)
 k <- ncol(fl1)
 fl <- fl[,order(rep(1:k, 3))]
-fl <- as.data.table(fl)
+fl <- data.table::as.data.table(fl)
 cn <- rep(1:ncol(gl), each = 3)
 cn <- paste0("Ind", formatC(cn, width = 3, format = "d", flag = "0"))
 colnames(fl) <- cn

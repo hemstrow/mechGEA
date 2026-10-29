@@ -24,7 +24,7 @@ columns named:
 }
 
 All remaining variables must be numeric and are assumed to be uncorrelated
-environmental variables. The function \code{\link{get_uncorrelated_envs}} can
+environmental variables. The function \code{\link{prune_envs}} can
 be used to generate uncorrelated variables from a full matrix of envs.
 }
 \keyword{datasets}
