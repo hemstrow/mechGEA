@@ -7,9 +7,35 @@ installed.}
 \usage{
 setup_mechGEA_env(name = "mechGEA", conda_path = "DEFAULT")
 }
+\arguments{
+\item{name}{character, default "mechGEA". Name of the environment to
+create.}
+
+\item{conda_path}{character, default "DEFAULT". Path to conda binary. If
+"DEFAULT", \code{\link[reticulate]{conda_binary}} will be used to attempt
+a guess and install if no conda install located.}
+}
+\value{
+Generates a conda environment with \code{\link{mechGEA}} and all
+dependencies correctly installed. Load with \code{conda activate mechGEA}
+(or whatever name was used during setup) called from the command line.
+}
 \description{
-Set-up a conda environment with all \code{mechGEA} dependencies properly
-installed.
+\code{\link{mechGEA}} can be difficult to properly install given very
+exact install order requirements to prevent conflicts and bugs on some
+systems. This function sets up a properly-installed conda/mamba environment
+for future use.
+}
+\examples{
+# setup an environment using the default conda path
+\dontrun{
+setup_mechGEA_env("mechGEA")
+
+# then, in command line (not R), run:
+# conda activate mechGEA
+# Rscript /path/to/my/mechGEA/analysis/Rscript.R
+}
+
 }
 \author{
 Eric Robertson

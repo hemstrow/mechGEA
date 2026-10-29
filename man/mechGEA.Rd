@@ -267,6 +267,59 @@ batches and then combining.
 \item \code{plot_gea()}: Plot GEA model results. Consider running with \code{\link{mechGEA}} for the full pipeline.
 
 }}
+\examples{
+# a basic run of the full pipeline
+## example beagle file:
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+## convert the formats of the data and metadata
+phred <- beagle2pl(beagle, lines = 1:150)
+input_data <- prepare_metadata(sample_metadata)
+## run the pipeline
+\dontrun{
+res <- mechGEA(phred,
+               patch_info = input_data$patch_info,
+               patches_xy = input_data$patches_xy,
+               migration_loci = 50,
+               env = input_data$env,
+               iter_sampling_gea = 100,
+               iter_warmup_gea = 200,
+               iter_sampling_mig = 100,
+               iter_warmup_mig = 200)
+}
+
+# Run only up until the migration calculation and plot results
+\dontrun{
+res_mig <- mechGEA(phred,
+                   patch_info = input_data$patch_info,
+                   patches_xy = input_data$patches_xy,
+                   migration_loci = 50,
+                   env = input_data$env,
+                   iter_sampling_mig = 100,
+                   iter_warmup_mig = 200,
+                   stop_after_migration = TRUE)
+p <- plot_migration(migration_results = res_mig$migration_results,
+       migration_data = res_mig$stan_and_migration_data$migration_data,
+       patches_xy = input_data$patches_xy,
+       mig_plot_threshold = 0.4,
+       mig_plot_topn = 2,
+       mig_plot_binsize = 1)
+}
+
+# using a pre-computed migration result (great if running a migration once
+# and applying across many chunks)
+\dontrun{
+res_ <- mechGEA(phred,
+               patch_info = input_data$patch_info,
+               patches_xy = input_data$patches_xy,
+               migration_loci = 50,
+               env = input_data$env,
+               iter_sampling_gea = 100,
+               iter_warmup_gea = 200,
+               migration_results = res_mig$migration_results)
+}
+
+
+}
 \references{
 Goel, N., et al. (2026). Identifying adaptive variation in
 spatially structured populations using low-coverage whole-genome sequencing

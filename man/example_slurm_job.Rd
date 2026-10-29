@@ -12,6 +12,7 @@ example_slurm_job(
   conda_env = "mechGEA",
   control_file_prefix = "./control/",
   env_mean_method = "unweighted",
+  prune_r2 = 0.7,
   idp = 1,
   ...
 )
@@ -34,7 +35,7 @@ each file in \code{beagle_files}.}
 \item{conda_env}{character, default mechGEA. A named \code{conda} environment
 to load at the start of the script. Note that if a conda module etc. needs
 to be loaded for this env to load, the resulting SLURM array-job shell
-script must be modified. See \code{\link{setup_likeGEA_env}} for help
+script must be modified. See \code{\link{setup_mechGEA_env}} for help
 setting up a working \code{conda} environment.}
 
 \item{control_file_prefix}{character, default "./control/". A prefix indicating
@@ -44,6 +45,10 @@ located. Either a directory ending in "/" or a file basename prefix.}
 \item{env_mean_method}{character, default "unweighted". Weighting scheme for
 mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
 See \code{\link{prepare_metadata}} for details and options.}
+
+\item{prune_r2}{numeric or FALSE, default 0.7. If numeric, the r2 by which
+to prune environmental variables to ensure all are uncorrelated. Scaling
+is always set to TRUE; to scale without pruning set prune_r2 to 1.}
 
 \item{idp}{integer, default 1. Inverse-distance weighting provided if using
 weighted env means. See \code{\link{prepare_metadata}} for details and
@@ -55,6 +60,30 @@ options.}
 Please note: the resulting shell script, located in the \code{output_dir}
 named \code{example_slurm_array_job.sh} should be edited to fit the user's
 SLURM configuration. See notes at the top of the file!
+}
+\examples{
+# first, chunk a beagle file
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+chunks <- get_chunks(beagle, loci_per_chunk = 150)
+
+# next, setup a conda env
+\dontrun{
+setup_mechGEA_env("mechGEA")
+}
+
+# then, create the slurm job
+slurm_script <- example_slurm_job(
+  beagle_files = chunks,
+  sample_metadata = sample_metadata, # the example metadata sf object
+  conda_env = "mechGEA",
+  control_file_prefix = "./control/"
+  env_mean_method = "unweighted", # unweighted env averages
+  prune_r2 = 0.7 # prune envs
+  )
+
+# lastly, edit the resulting slurm script with cluster/resource specific
+# needs and submit the job.
+
 }
 \author{
 William Hemstrom

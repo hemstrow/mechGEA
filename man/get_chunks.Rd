@@ -24,6 +24,12 @@ different files round-robin style. Note that this is much faster on Linux
 than on Windows, since it avoids reading anything into memory using unix
 commands.
 }
+\examples{
+# generate 100 SNP chunks
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+get_chunks(beagle, loci_per_chunk = 100)
+
+}
 \author{
 William Hemstrom
 }

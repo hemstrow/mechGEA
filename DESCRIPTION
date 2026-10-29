@@ -1,5 +1,5 @@
 Package: mechGEA
-Title: Bayesian Genotype-Environment Association Analyses with Likelihoods.
+Title: Mechanist Bayesian Genotype-Environment Association Analyses with Likelihoods.
 Version: 0.0.0.9000
 Authors@R: 
     c(person("William", "Hemstrom", email = "hemstrow@gmail.com", role = c("aut", "cre")),
