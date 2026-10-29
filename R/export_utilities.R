@@ -53,7 +53,7 @@
 #'   beagle_files = chunks,
 #'   sample_metadata = sample_metadata, # the example metadata sf object
 #'   conda_env = "mechGEA",
-#'   control_file_prefix = "./control/"
+#'   control_file_prefix = "./control/",
 #'   env_mean_method = "unweighted", # unweighted env averages
 #'   prune_r2 = 0.7 # prune envs
 #'   )

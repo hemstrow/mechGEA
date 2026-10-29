@@ -11,7 +11,7 @@ Phred <- beagle2pl(beagle)
 
 cat("Done. Data inputs:\n")
 cat("=========================================\n.Phred:\n")
-print(head(Phred)[,1:6])
+print(utils::head(Phred)[,1:6])
 cat("=========================================\n.patch_info:\n")
 print(meta$patch_info)
 cat("=========================================\n.patches_xy:\n")

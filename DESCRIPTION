@@ -17,6 +17,7 @@ RoxygenNote: 7.3.3
 Imports:
     bread,
     cowplot,
+    data.table,
     dplyr,
     dreamerr,
     geodist,
@@ -33,6 +34,7 @@ Imports:
     rstan,
     R.utils,
     sf,
+    stats,
     stringi,
     tictoc
 Suggests:
@@ -45,7 +47,6 @@ Additional_repositories:
     https://ropensci.r-universe.dev
 Depends:
     cmdstanr,
-    data.table,
     R (>= 3.6.0)
 LazyData: true
 Config/testthat/edition: 3

@@ -178,9 +178,7 @@ plot_gea <- function(stan_data,
                      env_names,
                      CI = 0.95,
                      env_colors = NULL){
-
-  # DEV NOTES: Plots should probably all be swapped over to ggplots and the raw data
-  # returned to allow for much easier customization of plots!
+  Env_var <- Locus <- NULL
 
   ## ---- Load -----------------------------------------------------------------
   data         <- stan_data; rm(stan_data)
@@ -214,9 +212,9 @@ plot_gea <- function(stan_data,
     if (data$N_env > length(cvd_safe))
       cvd_safe <- grDevices::palette.colors(data$N_env, palette = "Polychrome 36",
                                             recycle = FALSE)
-    env_colors <- setNames(cvd_safe[seq_len(data$N_env)], env_names)
+    env_colors <- stats::setNames(cvd_safe[seq_len(data$N_env)], env_names)
   } else {
-    env_colors <- setNames(env_colors, env_names)
+    env_colors <- stats::setNames(env_colors, env_names)
   }
 
 

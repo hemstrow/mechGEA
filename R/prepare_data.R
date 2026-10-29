@@ -47,10 +47,10 @@
 beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 
   if(!is.null(lines)){
-    d <- fread(file, skip = lines[1] - 1, nrows = length(lines))
+    d <- data.table::fread(file, skip = lines[1] - 1, nrows = length(lines))
   }
   else{
-    d <- fread(file)
+    d <- data.table::fread(file)
   }
 
   header <- d[,1:3]
@@ -127,7 +127,7 @@ get_chunks <- function(beagle_file,
       nsnps <- as.numeric(nsnps) - 1
     }
     else {
-      nsnps <- fread(beagle_file, select = 1)
+      nsnps <- data.table::fread(beagle_file, select = 1)
       nsnps <- nrow(nsnps)
     }
   } else {
@@ -186,7 +186,7 @@ get_chunks <- function(beagle_file,
     })
     for(i in 1:length(read_parts)){
       cat("Reading part:", i)
-      tbeag <- fread(beagle_file, skip = read_parts[[i]][1] - 1,
+      tbeag <- data.table::fread(beagle_file, skip = read_parts[[i]][1] - 1,
                      nrows = read_parts[[i]][2])
 
       cparts <- split(tbeag, rep(1:nfiles, length.out = nrow(tbeag)))
@@ -194,7 +194,7 @@ get_chunks <- function(beagle_file,
 
       lapply(1:length(cparts), function(x){
 
-        fwrite(cparts[[x]], names(cparts)[x],
+        data.table::fwrite(cparts[[x]], names(cparts)[x],
                append = ifelse(file.exists(names(cparts)[x]), TRUE, FALSE),
                sep = "\t")
       })

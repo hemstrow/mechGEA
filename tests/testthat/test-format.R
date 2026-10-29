@@ -5,9 +5,9 @@ test_that("get_chunks",{
   chunk_files <- get_chunks(beagle, 100)
 
   ## ref
-  ref <- fread(beagle)
+  ref <- data.table::fread(beagle)
   ## chunks
-  chunks <- lapply(chunk_files, fread)
+  chunks <- lapply(chunk_files, data.table::fread)
   ## colnames
   for(x in 1:length(chunks)){
     expect_identical(colnames(chunks[[x]]), colnames(ref))
@@ -27,9 +27,9 @@ test_that("get_chunks",{
   chunk_files <- get_chunks(beagle, 100)
 
   ## ref
-  ref <- fread(beagle)
+  ref <- data.table::fread(beagle)
   ## chunks
-  chunks <- lapply(chunk_files, fread)
+  chunks <- lapply(chunk_files, data.table::fread)
   ## colnames
   for(x in 1:length(chunks)){
     expect_identical(colnames(chunks[[x]]), colnames(ref))

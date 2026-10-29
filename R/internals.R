@@ -104,7 +104,7 @@ genotype_from_gl <- function(gl_log) {
   has_data <- rowSums(is.na(m)) == 0
   res <- rep(NA_integer_, nrow(m))
   if (any(has_data)) {
-    r <- runif(sum(has_data), 0, rowSums(m[has_data, , drop = FALSE]))
+    r <- stats::runif(sum(has_data), 0, rowSums(m[has_data, , drop = FALSE]))
     sub <- m[has_data, , drop = FALSE]
     res[has_data] <- ifelse(r < sub[, 1], 0L,
                      ifelse(r < sub[, 1] + sub[, 2], 1L, 2L))
@@ -150,7 +150,7 @@ compute_N_eff_G_eff_gl <- function(gl, N_table, n_cores = NULL) {
   if (is.null(n_cores)) n_cores <- max(1, min(parallel::detectCores(), 12))
   N_locus <- dim(gl)[1]
   N_patch <- length(N_table)
-  patch_start <- cumsum(c(1L, head(N_table, -1)))
+  patch_start <- cumsum(c(1L, utils::head(N_table, -1)))
   patch_end   <- cumsum(N_table)
   patch_idx <- lapply(seq_len(N_patch), function(k) patch_start[k]:patch_end[k])
 
@@ -231,7 +231,7 @@ compute_BetaBin_theta_gl <- function(gl, N_table, n_cores = NULL) {
   if (is.null(n_cores)) n_cores <- max(1, min(parallel::detectCores(), 12))
   N_locus <- dim(gl)[1]
   N_patch <- length(N_table)
-  patch_start <- cumsum(c(1L, head(N_table, -1)))
+  patch_start <- cumsum(c(1L, utils::head(N_table, -1)))
   patch_end   <- cumsum(N_table)
   patch_idx   <- lapply(seq_len(N_patch), function(k) patch_start[k]:patch_end[k])
 
@@ -252,9 +252,9 @@ compute_BetaBin_theta_gl <- function(gl, N_table, n_cores = NULL) {
       if (Group[l, j] > 0L) {
         start_col <- pos_offset[l, j]
         end_col   <- start_col + 2L * Group[l, j]
-        g1 <- na.omit(gl[l, patch_idx[[j]], 1])
-        g2 <- na.omit(gl[l, patch_idx[[j]], 2]) + log(2)
-        g3 <- na.omit(gl[l, patch_idx[[j]], 3])
+        g1 <- stats::na.omit(gl[l, patch_idx[[j]], 1])
+        g2 <- stats::na.omit(gl[l, patch_idx[[j]], 2]) + log(2)
+        g3 <- stats::na.omit(gl[l, patch_idx[[j]], 3])
         row_l[start_col:end_col] <- .compute_log_coeffs(g1, g2, g3)
       }
     }
@@ -290,7 +290,7 @@ compute_pi_genotype <- function(genotype, N_table) {
   ##                 pi_diag = length N_patch)
   N_locus <- nrow(genotype)
   N_patch <- length(N_table)
-  patch_start <- cumsum(c(1L, head(N_table, -1)))
+  patch_start <- cumsum(c(1L, utils::head(N_table, -1)))
   patch_end   <- cumsum(N_table)
 
   p_hat <- matrix(NA_real_, N_locus, N_patch)
@@ -368,6 +368,9 @@ write_common_data_stan <- function(env_matrix, mig_matrix, k_sd, filename) {
   out_text
 }
 
+#' @importFrom stats sd
+#' @importFrom stats median
+#' @importFrom stats mad
 summarise_draws_parallel <- function(draws, n_cores = NULL,
                                        chunk_min = 50L) {
   ## SAFE PARALLEL wrapper over posterior::summarise_draws via PSOCK

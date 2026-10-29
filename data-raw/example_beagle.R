@@ -31,4 +31,4 @@ snpinfo <- data.table(marker = paste0("CHR1_", 1:nrow(fl)),
                       allele2 = 2)
 
 beagle <- cbind(snpinfo, fl)
-fwrite(beagle, "inst/extdata/example.beagle.gz", sep = "\t", eol = "\n", row.names = FALSE, col.names = TRUE)
+data.table::fwrite(beagle, "inst/extdata/example.beagle.gz", sep = "\t", eol = "\n", row.names = FALSE, col.names = TRUE)

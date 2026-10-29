@@ -547,7 +547,7 @@ estimate_migration <- function(migration_data,
             all(!is.na(data$pi_diag)))
 
   ## Standardise DistM by SD of off-diagonal entries.
-  DistM_std  <- data$DistM / sd(data$DistM[upper.tri(data$DistM)])
+  DistM_std  <- data$DistM / stats::sd(data$DistM[upper.tri(data$DistM)])
   covariates <- matrix(convert_T_to_t(DistM_std), ncol = 1)
 
   ## ---- Compile Stan model ---------------------------------------------------
