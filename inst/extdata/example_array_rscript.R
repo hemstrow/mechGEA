@@ -3,7 +3,7 @@ args <- commandArgs(TRUE)
 beagle <- as.character(args[1])
 meta <- readRDS(as.character(args[2]))
 parms <- readRDS(as.character(args[3]))
-iter <- as.numeric(args[4])
+migration_res <- as.character(args[4])
 
 cat("Formatting", beagle, "as phred-scaled likelihoods.\n")
 
@@ -18,6 +18,14 @@ cat("=========================================\n.patches_xy:\n")
 print(meta$patches_xy)
 cat("=========================================\n.env:\n")
 print(meta$env)
+
+use_migration <- FALSE
+if(file.exists(migration_res)){
+  cat("=========================================\n.migration_res:\n")
+  migration_res <- readRDS(migration_res)
+  print(migration_res)
+  use_migration <- TRUE
+}
 
 cat("\n============================\n")
 if(length(parms) == 0){
@@ -37,5 +45,8 @@ like_args <- c(list(Phred = Phred,
                     patches_xy = meta$patches_xy,
                     env = meta$env),
                parms)
+if(use_migration){
+  like_args <- c(like_args, list(migration_results = migration_res))
+}
 
 results <- do.call(mechGEA, like_args)

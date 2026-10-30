@@ -34,7 +34,7 @@ setup_mechGEA_env <- function(name = "mechGEA", conda_path = "DEFAULT"){
 
   if(conda_path == "DEFAULT"){
     if(tryCatch(!file.exists(reticulate::conda_binary()), error = function(e) FALSE)){
-      reticulate::install_conda()
+      reticulate::install_miniconda()
     }
   } else {
     options(reticulate.conda_binary = conda_path)

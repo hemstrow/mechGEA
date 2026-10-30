@@ -14,6 +14,10 @@ example_slurm_job(
   env_mean_method = "unweighted",
   prune_r2 = 0.7,
   idp = 1,
+  migration_results = NULL,
+  memory = "100G",
+  job_time = "1-24:00:00",
+  cores = "40",
   ...
 )
 }
@@ -22,10 +26,10 @@ example_slurm_job(
 files to run. These will be formatted to phred files for running by the
 generated SLURM script for more effective parallelization.}
 
-\item{sample_metadata}{either a named list of data.framescontaining the
+\item{sample_metadata}{either a named list of data.frames containing the
 needed metadata in the correct format expected by \code{\link{mechGEA}}
 (see \code{\link{example_gl}}, although the \code{$likelihoods} object is
-not needed.) or an input \code{\link[sf]{sf}} object like
+not needed.) or an input \code{\link[sf:sf]{sf}} object like
 \code{\link{sample_metadata}}.}
 
 \item{output_dir}{character, default ".". A path to the director where final
@@ -54,6 +58,24 @@ is always set to TRUE; to scale without pruning set prune_r2 to 1.}
 weighted env means. See \code{\link{prepare_metadata}} for details and
 options.}
 
+\item{migration_results}{file path or NULL, default NULL. If provided,
+\code{\link{mechGEA}} will use migration results in the list format
+produced by \code{\link{estimate_migration}}, saved as an RDS with
+\code{\link{saveRDS}} rather than re-running with the provided data. This
+is useful if you wish to assess migration once with a set of loci and then
+use that assessment for other genomic chunks (see
+\code{stop_after_migration} in \code{\link{mechGEA}} to estimate migration
+on one chunk and then stop the model).}
+
+\item{memory}{character, default "100G". Amount of memory to allocate to
+each job. See SLURM "--mem" option details for format.}
+
+\item{job_time}{character, default "1-24:00:00" (two days). Amount of time
+to allocate to each job. See SLURM "-t" option details for format.}
+
+\item{cores}{integer, default 40. Number of cores to allocate for each job.
+See SLURM "-n" option details.}
+
 \item{...}{additional arguments passed to \code{\link{mechGEA}}.}
 }
 \description{
@@ -69,7 +91,6 @@ chunks <- get_chunks(beagle, loci_per_chunk = 150)
 # next, setup a conda env
 \dontrun{
 setup_mechGEA_env("mechGEA")
-}
 
 # then, create the slurm job
 slurm_script <- example_slurm_job(
@@ -83,10 +104,7 @@ slurm_script <- example_slurm_job(
 
 # lastly, edit the resulting slurm script with cluster/resource specific
 # needs and submit the job.
-
-# cleanup
-unlink("./control/", recursive = TRUE)
-
+}
 }
 \author{
 William Hemstrom

@@ -1,10 +1,10 @@
 #!/bin/bash -l
 
-#SBATCH -t 2-24:00:00
+#SBATCH -t TIME_REPLACE
 #SBATCH -J mechGEA
 #SBATCH --array=1-ARRAY_REPLACE
-#SBATCH --mem=100G
-#SBATCH -n 40
+#SBATCH --mem=MEM_REPLACE
+#SBATCH -n CORES_REPLACE
 #SBATCH -N 1
 #SBATCH --output=./slurm_%x_%A_%a.out
 #SBATCH --error=./slurm_%x_%A_%a.err
@@ -40,6 +40,7 @@ parameter_file=PARAM_REPLACE
 dir_prefix=DIR_REPLACE
 env=ENV_REPLACE
 execution_Rscript=RSCRIPT_REPLACE
+mig_res=MIG_RES_REPLACE
 
 conda activate $env
 
@@ -64,5 +65,5 @@ mkdir $working_dir
 cd $working_dir
 
 # Run the actual R script
-Rscript $execution_Rscript $beagle $metadata $parameter_file $SLURM_ARRAY_TASK_ID
+Rscript $execution_Rscript $beagle $metadata $parameter_file $mig_res
 

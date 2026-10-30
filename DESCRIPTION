@@ -28,6 +28,7 @@ Imports:
     gstat,
     LaplacesDemon,
     matrixStats,
+    methods,
     parallel,
     posterior,
     rnaturalearth,

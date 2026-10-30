@@ -8,10 +8,10 @@
 #' @param beagle_files vector of file paths to \code{.beagle}/\code{.beagle.gz}
 #'   files to run. These will be formatted to phred files for running by the
 #'   generated SLURM script for more effective parallelization.
-#' @param sample_metadata either a named list of data.framescontaining the
+#' @param sample_metadata either a named list of data.frames containing the
 #'   needed metadata in the correct format expected by \code{\link{mechGEA}}
 #'   (see \code{\link{example_gl}}, although the \code{$likelihoods} object is
-#'   not needed.) or an input \code{\link[sf]{sf}} object like
+#'   not needed.) or an input \code{\link[sf:sf]{sf}} object like
 #'   \code{\link{sample_metadata}}.
 #' @param output_dir character, default ".". A path to the director where final
 #'   \code{\link{mechGEA}} outputs will be stored in named sub-directories for
@@ -33,6 +33,20 @@
 #' @param idp integer, default 1. Inverse-distance weighting provided if using
 #'   weighted env means. See \code{\link{prepare_metadata}} for details and
 #'   options.
+#' @param migration_results file path or NULL, default NULL. If provided,
+#'   \code{\link{mechGEA}} will use migration results in the list format
+#'   produced by \code{\link{estimate_migration}}, saved as an RDS with
+#'   \code{\link{saveRDS}} rather than re-running with the provided data. This
+#'   is useful if you wish to assess migration once with a set of loci and then
+#'   use that assessment for other genomic chunks (see
+#'   \code{stop_after_migration} in \code{\link{mechGEA}} to estimate migration
+#'   on one chunk and then stop the model).
+#' @param memory character, default "100G". Amount of memory to allocate to
+#'   each job. See SLURM "--mem" option details for format.
+#' @param job_time character, default "1-24:00:00" (two days). Amount of time
+#'   to allocate to each job. See SLURM "-t" option details for format.
+#' @param cores integer, default 40. Number of cores to allocate for each job.
+#'   See SLURM "-n" option details.
 #' @param ... additional arguments passed to \code{\link{mechGEA}}.
 #'
 #' @export
@@ -68,6 +82,10 @@ example_slurm_job <- function(beagle_files,
                               env_mean_method = "unweighted",
                               prune_r2 = .7,
                               idp = 1,
+                              migration_results = NULL,
+                              memory = "100G",
+                              job_time = "1-24:00:00",
+                              cores = "40",
                               ...){
 
   #NOTE: set the resources from arg too?
@@ -134,6 +152,14 @@ example_slurm_job <- function(beagle_files,
     sample_metadata <- smpath
   }
 
+  # check the migration data if provided
+  if(!is.null(migration_results)){
+    migration_results <- normalizePath(migration_results, mustWork = FALSE) # we check it works next line anyway
+    if(!file.exists(migration_results)){
+      stop(paste0("Could not find pre-existing migration results: ", migration_results, "\n"))
+    }
+  }
+
   # read in the shell script
   path <- system.file("extdata", "example_slurm_array_job.sh", package = "mechGEA")
   sh <- paste0(control_file_prefix, "example_slurm_array_job.sh")
@@ -162,6 +188,10 @@ example_slurm_job <- function(beagle_files,
   xfun::gsub_file(sh, "ENV_REPLACE", conda_env)
   xfun::gsub_file(sh, "RSCRIPT_REPLACE", control_rscript)
   xfun::gsub_file(sh, "ARRAY_REPLACE", as.character(nfiles))
+  xfun::gsub_file(sh, "MIG_RES_REPLACE", ifelse(!is.null(migration_results), migration_results, "FALSE"))
+  xfun::gsub_file(sh, "TIME_REPLACE", job_time)
+  xfun::gsub_file(sh, "CORES_REPLACE", cores)
+  xfun::gsub_file(sh, "MEM_REPLACE", memory)
 
   return(sh)
 }

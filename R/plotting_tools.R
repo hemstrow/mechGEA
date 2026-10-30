@@ -183,7 +183,7 @@ plot_gea <- function(stan_data,
                      env_colors = NULL){
   Env_var <- Locus <- SNP <- . <- nlogp <- Env <- color <- migration_off <- migration_on <- NULL
   type <- value <- variable <- facet <- muk <- `No migration` <- NULL
-  `Mean-field (1st correction)` <- logit <- env_value <- p_logit <- NULL
+  `Mean-field (1st correction)` <- logit <- env_value <- p_logit <- patch <- NULL
 
   ## ---- Load -----------------------------------------------------------------
   data         <- stan_data; rm(stan_data)

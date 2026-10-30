@@ -24,7 +24,7 @@ test_that("slurm_example", {
 
   # correct inputs
   inputs <- sh[grep("Input files", sh):grep("conda activate", sh)]
-  inputs <- inputs[-(8:9)]
+  inputs <- inputs[-(9:10)]
   ## beagle list
   beag_list <- inputs[grep("beagle", inputs)]
   beag_list <- gsub("beagle_list=", "", beag_list)
@@ -56,6 +56,28 @@ test_that("slurm_example", {
   rlines <- readLines(rfile)
   rlines2 <- readLines(system.file("extdata", "example_array_rscript.R", package = "mechGEA"))
   expect_equal(rlines, rlines2)
+  ## no migration provided
+  mig <- inputs[grep("mig_res", inputs)]
+  expect_equal(mig, "mig_res=FALSE")
+
+  # resources
+  ## array
+  array <- sh[grep("--array=", sh)]
+  array <- as.numeric(gsub("#SBATCH --array=1-", "", array))
+  expect_equal(length(flist), array)
+  ## time
+  time <- sh[grep("#SBATCH -t", sh)]
+  time <- gsub("#SBATCH -t ", "", time)
+  expect_equal("1-24:00:00", time)
+  ## cores
+  cores <- sh[grep("#SBATCH -n", sh)]
+  cores <- as.numeric(gsub("#SBATCH -n ", "", cores))
+  expect_equal(40, cores)
+  ## memory
+  mem <- sh[grep("#SBATCH --mem=", sh)]
+  mem <- gsub("#SBATCH --mem=", "", mem)
+  expect_equal("100G", mem)
+
 
   # cleanup
   file.remove(rfile)
@@ -63,6 +85,67 @@ test_that("slurm_example", {
   file.remove(parf) # cleanup
   file.remove(flist) # cleanup
   unlink("./control/", recursive = TRUE)
+
+
+
+  # once more, but with provided mig as a test
+  ## in this case, just provide a BS mig file to check it fills correctly
+  BS_mig <- numeric()
+  saveRDS(BS_mig, "BS_mig.RDS")
+
+
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  chunks <- get_chunks(beagle, loci_per_chunk = 150)
+
+  # then, create the slurm job
+  slurm_script <- example_slurm_job(
+    beagle_files = chunks,
+    sample_metadata = sample_metadata, # the example metadata sf object
+    conda_env = "mechGEA",
+    control_file_prefix = "./control/",
+    env_mean_method = "weighted", # unweighted env averages
+    idp = 2,
+    output_dir = "./outputs/",
+    prune_r2 = 0.7, # prune envs
+    iter_sampling_mig = 100,
+    iter_warmup_mig = 50,
+    max_treedepth_mig = 12,
+    migration_results = "BS_mig.RDS"
+  )
+
+  sh <- readLines("control/example_slurm_array_job.sh")
+
+  # correct inputs
+  inputs <- sh[grep("Input files", sh):grep("conda activate", sh)]
+  inputs <- inputs[-(9:10)]
+  mig <- inputs[grep("mig_res", inputs)]
+  mig <- gsub("mig_res=", "", mig)
+  expect_true(file.exists(mig))
+
+  ## once more, but with a mig file that DOESN'T exist
+  expect_error(slurm_script <- example_slurm_job(
+    beagle_files = chunks,
+    sample_metadata = sample_metadata, # the example metadata sf object
+    conda_env = "mechGEA",
+    control_file_prefix = "./control/",
+    env_mean_method = "weighted", # unweighted env averages
+    idp = 2,
+    output_dir = "./outputs/",
+    prune_r2 = 0.7, # prune envs
+    iter_sampling_mig = 100,
+    iter_warmup_mig = 50,
+    max_treedepth_mig = 12,
+    migration_results = "BS_mig_NOT_REAL.RDS"
+  ), "Could not find pre-existing migration results")
+
+
+  # cleanup
+  file.remove(rfile)
+  file.remove(metaf) # cleanup
+  file.remove(parf) # cleanup
+  file.remove(flist) # cleanup
+  unlink("./control/", recursive = TRUE)
+  file.remove("BS_mig.RDS")
 })
 
 
