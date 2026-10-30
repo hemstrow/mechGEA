@@ -46,7 +46,6 @@
 #' # next, setup a conda env
 #' \dontrun{
 #' setup_mechGEA_env("mechGEA")
-#' }
 #'
 #' # then, create the slurm job
 #' slurm_script <- example_slurm_job(
@@ -60,10 +59,7 @@
 #'
 #' # lastly, edit the resulting slurm script with cluster/resource specific
 #' # needs and submit the job.
-#'
-#' # cleanup
-#' unlink("./control/", recursive = TRUE)
-#'
+#'}
 example_slurm_job <- function(beagle_files,
                               sample_metadata,
                               output_dir = ".",

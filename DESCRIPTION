@@ -31,15 +31,15 @@ Imports:
     parallel,
     posterior,
     rnaturalearth,
-    rnaturalearthdata,
     rstan,
-    R.utils,
     sf,
     stats,
     stringi,
     tictoc
 Suggests:
+    R.utils,
     reticulate,
+    rnaturalearthdata,
     rnaturalearthhires,
     testthat (>= 3.0.0),
     xfun
