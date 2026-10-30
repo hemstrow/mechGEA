@@ -131,7 +131,7 @@ example_slurm_job <- function(beagle_files,
   } else {
     sample_metadata <- prepare_metadata(sample_metadata, env_mean_method, idp = idp)
     if(!isFALSE(prune_r2)){
-      sample_metadata$envs <- prune_envs(sample_metadata$env, r2 = prune_r2)
+      sample_metadata$env <- prune_envs(sample_metadata$env, r2 = prune_r2)
     }
     smpath <- normalizePath(paste0(control_file_prefix, "sample_metadata.RDS"), mustWork = FALSE)
     saveRDS(sample_metadata, smpath)
