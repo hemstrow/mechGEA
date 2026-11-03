@@ -18,6 +18,8 @@ example_slurm_job(
   memory = "100G",
   job_time = "1-24:00:00",
   cores = "40",
+  setup_env = FALSE,
+  setup_env_conda_path = "DEFAULT",
   ...
 )
 }
@@ -75,6 +77,15 @@ to allocate to each job. See SLURM "-t" option details for format.}
 
 \item{cores}{integer, default 40. Number of cores to allocate for each job.
 See SLURM "-n" option details.}
+
+\item{setup_env}{logical, default FALSE. If TRUE, will automatically attempt
+to setup a conda environment with the name given in \code{conda_env} using
+\code{\link{setup_mechGEA_env}}. If a conda environment with that name
+already exists, the user will be prompted to overwrite or the function will
+fail.}
+
+\item{setup_env_conda_path}{character, default "DEFAULT". Sets the path to
+the conda executable to use; see \code{\link{setup_mechGEA_env}}.}
 
 \item{...}{additional arguments passed to \code{\link{mechGEA}}.}
 }

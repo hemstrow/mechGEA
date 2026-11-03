@@ -47,6 +47,13 @@
 #'   to allocate to each job. See SLURM "-t" option details for format.
 #' @param cores integer, default 40. Number of cores to allocate for each job.
 #'   See SLURM "-n" option details.
+#' @param setup_env logical, default FALSE. If TRUE, will automatically attempt
+#'   to setup a conda environment with the name given in \code{conda_env} using
+#'   \code{\link{setup_mechGEA_env}}. If a conda environment with that name
+#'   already exists, the user will be prompted to overwrite or the function will
+#'   fail.
+#' @param setup_env_conda_path character, default "DEFAULT". Sets the path to
+#'   the conda executable to use; see \code{\link{setup_mechGEA_env}}.
 #' @param ... additional arguments passed to \code{\link{mechGEA}}.
 #'
 #' @export
@@ -86,6 +93,8 @@ example_slurm_job <- function(beagle_files,
                               memory = "100G",
                               job_time = "1-24:00:00",
                               cores = "40",
+                              setup_env = FALSE,
+                              setup_env_conda_path = "DEFAULT",
                               ...){
 
   #NOTE: set the resources from arg too?
@@ -95,6 +104,36 @@ example_slurm_job <- function(beagle_files,
   bad_beagles <- !file.exists(beagle_files)
   if(any(bad_beagles)){
     stop(paste0("Some beagle files not found:\n", paste0(bad_beagles, collapse = "\n\n")))
+  }
+
+  dreamerr::check_value(setup_env, .type = "scalar logical")
+
+  if(setup_env){
+    # check that the conda_env doesn't already exist, ask if it should be replaced if it does.
+    if(conda_env %in% reticulate::conda_list()$name){
+      say <- paste0("Conda environment named: ", conda_env, " already created.")
+      if (!interactive()) {
+        stop(say)
+      }
+
+      cat(say, "")
+      cat("Overwrite? (y or n)\n")
+
+      resp <- readLines(n = 1)
+      resp <- tolower(resp)
+      if (resp != "y") {
+        stop(say)
+      } else {
+        reticulate::conda_remove(conda_env, conda = setup_env_conda_path)
+        setup_mechGEA_env(conda_env, setup_env_conda_path)
+      }
+    } else {
+      setup_mechGEA_env(conda_env, setup_env_conda_path)
+    }
+  } else{
+    if(!conda_env %in% reticulate::conda_list()$name){
+      stop(paste0("Conda environment: ", conda_env, " not found.\n"))
+    }
   }
 
   nfiles <- length(beagle_files)
