@@ -167,7 +167,7 @@ get_chunks <- function(beagle_file,
 
     system(cmd)
 
-    outfiles <- paste0("chunk_", formatC(0:(nfiles - 1), width = nchar(as.character(nfiles)), format = "d", flag = "0"),
+    outfiles <- paste0("chunk_", formatC(0:(nfiles - 1), width = max(2, nchar(as.character(nfiles)) - 1), format = "d", flag = "0"),
                        ".beagle")
     if(tools::file_ext(beagle_file) == "gz"){outfiles <- paste0(outfiles, ".gz")}
     return(outfiles)

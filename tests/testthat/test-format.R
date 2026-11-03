@@ -42,6 +42,25 @@ test_that("get_chunks",{
   file.remove(chunk_files)
   file.remove("test.beagle")
   if(file.exists("test.beagle.gz")){file.remove("test.beagle.gz")}
+
+  # test correct names and number of chunks when at 9, 10, 11, 99, 100, 101 chunks
+  gznsnps <- function(file){
+    nsnps <- system(paste0("zcat ", file, " | wc -l"), intern = TRUE)
+    nsnps <- as.numeric(nsnps) - 1
+    return(nsnps)
+  }
+  nsnps <- gznsnps(beagle)
+
+  for(i in c(9:11, 99:101)){
+    target_length <- ceiling(nsnps/i)
+    chunks <- get_chunks(beagle, loci_per_chunk = target_length)
+    expect_true(all(file.exists(chunks))) # note that this won't always produce different numbers--at very high chunk targets it'll only make so many files since you can't continue to split evenly. This should pretty much always be OK.
+    lens <- unlist(lapply(chunks, gznsnps))
+    expect_equal(sum(lens), nsnps)
+    file.remove(chunks)
+  }
+
+
 })
 
 test_that("env pruning",{
