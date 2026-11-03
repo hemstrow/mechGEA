@@ -2,7 +2,7 @@ test_that("slurm_example", {
 
   # first, chunk a beagle file
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
-  chunks <- get_chunks(beagle, loci_per_chunk = 150)
+  chunks <- get_chunks(beagle, loci_per_chunk = 150, outdir = ".")
 
   # then, create the slurm job
   slurm_script <- example_slurm_job(
@@ -78,7 +78,6 @@ test_that("slurm_example", {
   mem <- gsub("#SBATCH --mem=", "", mem)
   expect_equal("100G", mem)
 
-
   # cleanup
   file.remove(rfile)
   file.remove(metaf) # cleanup
@@ -95,7 +94,7 @@ test_that("slurm_example", {
 
 
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
-  chunks <- get_chunks(beagle, loci_per_chunk = 150)
+  chunks <- get_chunks(beagle, loci_per_chunk = 150, outdir = ".")
 
   # then, create the slurm job
   slurm_script <- example_slurm_job(
@@ -138,7 +137,6 @@ test_that("slurm_example", {
     migration_results = "BS_mig_NOT_REAL.RDS"
   ), "Could not find pre-existing migration results")
 
-
   # cleanup
   file.remove(rfile)
   file.remove(metaf) # cleanup
@@ -146,6 +144,53 @@ test_that("slurm_example", {
   file.remove(flist) # cleanup
   unlink("./control/", recursive = TRUE)
   file.remove("BS_mig.RDS")
+
+
+
+  #======================================================================================================
+  # test that the resulting file Rscript file is correct and will run things with the requested params.
+  # to do this, we need to remove the #SBATCH commands and set the array to 1 (test on first file only)
+
+  skip_on_cran(); skip_on_ci()
+
+  # first, chunk a beagle file
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  chunks <- get_chunks(beagle, loci_per_chunk = 150, outdir = ".")
+
+  # then, create the slurm job
+  slurm_script <- example_slurm_job(
+    beagle_files = chunks,
+    sample_metadata = sample_metadata, # the example metadata sf object
+    conda_env = "mechGEA",
+    control_file_prefix = "./control/",
+    output_dir = "./outputs/",
+    prune_r2 = 0.7, # prune envs
+    iter_sampling_gea = 100,
+    iter_warmup_gea = 200,
+    iter_sampling_mig = 100,
+    iter_warmup_mig = 200,
+    migration_loci = 100
+  )
+
+  # edit the file to not use SLURM for the test
+  sh <- readLines("control/example_slurm_array_job.sh")
+  sh <- gsub("\\$SLURM_ARRAY_TASK_ID", 1, sh)
+  sh <- gsub("\\$\\{SLURM_ARRAY_TASK_ID\\}", 1, sh)
+  sh <- sh[!grepl("#SBATCH", sh)]
+  sh <- sh[!grepl("conda activate", sh)]
+
+  writeLines(sh, "control/example_slurm_array_job.sh", sep = "\n")
+  system("bash control/example_slurm_array_job.sh")
+
+  # read in and double check inputs
+  res <- readRDS("outputs/partition_1_chunk_00/final_results.RDS")
+  expect_true(sum(res$SNP_pvalues$nlogp > 4) %in% c(4, 5)) # occasionally 4
+
+  # cleanup
+  file.remove(chunks)
+  unlink("outdir") # cleanup
+  unlink("./control/", recursive = TRUE)
+
 })
 
 

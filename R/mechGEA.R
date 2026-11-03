@@ -31,7 +31,8 @@
 #' @param migration_loci integer, default 1000. Number of loci to use from
 #'   \code{Phred} to use for estimating migration. Must be equal to or less than
 #'   the total number of provided loci. Ignored if \code{migration_results} are
-#'   provided.
+#'   provided; if less than 1000, will be set to 1000 or the number of loci
+#'   in the dataset.
 #' @param k_sd numeric, default 4. NIKUNJ HERE PLEASE!
 #' @param p0 numeric, default 20. NIKUNJ HERE PLEASE!
 #' @param seed integer, default 42. Seed used for all model steps.

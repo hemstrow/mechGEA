@@ -4,7 +4,12 @@
 \alias{get_chunks}
 \title{Chunk a beagle file into partitions for processing.}
 \usage{
-get_chunks(beagle_file, loci_per_chunk = 10000, max_read = 50000)
+get_chunks(
+  beagle_file,
+  loci_per_chunk = 10000,
+  max_read = 50000,
+  outdir = dirname(beagle_file)
+)
 }
 \arguments{
 \item{beagle_file}{path to \code{.beagle} or \code{.beagle.gz} file.}
@@ -14,6 +19,9 @@ chunk.}
 
 \item{max_read}{numeric, default 50000. Number of lines to read for splitting
 at once. Ignored on Linux.}
+
+\item{outdir}{path to output directory, default
+\code{dirname(beagle_file)} (the directory containing the input file).}
 }
 \value{
 A vector of filenames for the chunks.

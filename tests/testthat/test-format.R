@@ -89,6 +89,8 @@ test_that("get_chunks",{
   expect_error(get_chunks(beagle, "stop"), "it is not an integer")
   expect_error(get_chunks(beagle, 10.2), "it is not an integer")
 
+  unlink("chunk_check", TRUE)
+
 })
 
 test_that("env pruning",{

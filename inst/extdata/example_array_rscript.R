@@ -31,11 +31,12 @@ cat("\n============================\n")
 if(length(parms) == 0){
   cat("No additional arguments. Beginning run.\n")
 } else {
-  cat("Additional arguments:"){
-    for(i in 1:length(parms)){
-      cat(paste0("\n\t", names(parms)[i], " = ", parms[[i]]))
-    }
+  cat("Additional arguments:")
+
+  for(i in 1:length(parms)){
+    cat(paste0("\n\t", names(parms)[i], " = ", parms[[i]]))
   }
+
   cat("\nBeginning run.\n")
 }
 
@@ -50,3 +51,5 @@ if(use_migration){
 }
 
 results <- do.call(mechGEA, like_args)
+saveRDS(results, "final_results.RDS")
+

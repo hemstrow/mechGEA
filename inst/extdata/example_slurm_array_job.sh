@@ -54,13 +54,13 @@ bn=$(basename $bn .beagle)
 # adjust file paths to absolute since we are moving dirs
 beagle=$(realpath $beagle)
 metadata=$(realpath $metadata)
-parameter_file=$(realpath $parmeter_file)
+parameter_file=$(realpath $parameter_file)
 execution_Rscript=$(realpath $execution_Rscript)
 
 # make a working directory and move to it
 working_dir="${dir_prefix}/partition_${SLURM_ARRAY_TASK_ID}_${bn}"
 
-mkdir $working_dir
+mkdir -p $working_dir
 
 cd $working_dir
 
