@@ -328,7 +328,8 @@ prepare_mig_data <- function(Phred, patch_info, patches_xy, env, migration_loci,
     stop(paste0(msg, collapse = "\n"))
   }
 
-  individuals <- patch_info; coordinates <- patches_xy; env_data <- env
+  individuals <- patch_info; coordinate
+  s <- patches_xy; env_data <- env
   N_sim <- N_sim_mig
   rm(patch_info, patches_xy, env, N_sim_mig)
 
@@ -660,7 +661,8 @@ estimate_migration <- function(migration_data,
   scalar_pars <- setdiff(all_vars[!grepl("\\[", all_vars) |
                                     grepl("^gamma\\[", all_vars)],
                          c("lp__", "Migration"))
-  print(fit$summary(variables = scalar_pars))
+  tab <- data.table::copy(data.table::as.data.table(fit$summary(variables = scalar_pars))) # hopefully done this way to fix some weird rmarkdown bugs.
+  print(tab); rm(tab)
   cat(sprintf("Migration[i,j]:  max Rhat = %.3f,  min ESS_bulk = %.0f\n",
               max(M_summary$rhat,     na.rm = TRUE),
               min(M_summary$ess_bulk, na.rm = TRUE)))
