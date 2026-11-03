@@ -2,6 +2,8 @@ test_that("get_chunks",{
 
   # correct on linux with gz
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  file.copy(beagle, "test.beagle.gz")
+  beagle <- "test.beagle.gz"
   chunk_files <- get_chunks(beagle, 100)
 
   ## ref
@@ -44,6 +46,9 @@ test_that("get_chunks",{
   if(file.exists("test.beagle.gz")){file.remove("test.beagle.gz")}
 
   # test correct names and number of chunks when at 9, 10, 11, 99, 100, 101 chunks
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  file.copy(beagle, "test.beagle.gz")
+  beagle <- "test.beagle.gz"
   gznsnps <- function(file){
     nsnps <- system(paste0("zcat ", file, " | wc -l"), intern = TRUE)
     nsnps <- as.numeric(nsnps) - 1
@@ -60,6 +65,29 @@ test_that("get_chunks",{
     file.remove(chunks)
   }
 
+  # test filenames in different directories
+  ## in current dir
+  chunks <- get_chunks(beagle, 1000)
+  expect_equal(dirname(chunks[1]), normalizePath("."))
+  file.remove(chunks)
+
+  # in arbitrary dir
+  dir.create("chunk_check")
+  chunks <- get_chunks(beagle, 1000, outdir = "chunk_check")
+  expect_equal(dirname(chunks[1]), normalizePath("chunk_check"))
+  file.remove(chunks)
+
+  # in source dir
+  file.rename(beagle, file.path("chunk_check", beagle))
+  beagle <- file.path("chunk_check", beagle)
+  chunks <- get_chunks(beagle, 1000)
+  expect_equal(dirname(chunks[1]), normalizePath("chunk_check"))
+  file.remove(chunks)
+
+  # errors
+  expect_error(get_chunks(beagle, 1000, outdir = "THIS_DIR_DOES_NOT_EXIST"), "Output directory: THIS_DIR_DOES_NOT_EXIST not found.")
+  expect_error(get_chunks(beagle, "stop"), "it is not an integer")
+  expect_error(get_chunks(beagle, 10.2), "it is not an integer")
 
 })
 

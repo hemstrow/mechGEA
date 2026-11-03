@@ -103,6 +103,8 @@ beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 #'   chunk.
 #' @param max_read numeric, default 50000. Number of lines to read for splitting
 #'   at once. Ignored on Linux.
+#' @param outdir path to output directory, default
+#'   \code{dirname(beagle_file)} (the directory containing the input file).
 #'
 #' @return A vector of filenames for the chunks.
 #'
@@ -117,10 +119,24 @@ beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 #'
 get_chunks <- function(beagle_file,
                        loci_per_chunk = 10000,
-                       max_read = 50000){
+                       max_read = 50000,
+                       outdir = dirname(beagle_file)){
 
+  #============sanity checks==========
   sys <- Sys.info()["sysname"]
 
+  dreamerr::check_set_value(loci_per_chunk, "scalar NONA integer")
+  if(sys == "Windows"){
+    dreamerr::check_set_value(max_read, "scalar NONA integer")
+  }
+
+
+  outdir <- normalizePath(outdir, mustWork = FALSE)
+  if(!dir.exists(outdir)){
+    stop(paste0("Output directory: ", outdir, " not found.\n"))
+  }
+
+  #===============run===========
   # get number of lines
   if(tools::file_ext(beagle_file) == "gz"){
     if(sys == "Linux"){
@@ -170,6 +186,15 @@ get_chunks <- function(beagle_file,
     outfiles <- paste0("chunk_", formatC(0:(nfiles - 1), width = max(2, nchar(as.character(nfiles)) - 1), format = "d", flag = "0"),
                        ".beagle")
     if(tools::file_ext(beagle_file) == "gz"){outfiles <- paste0(outfiles, ".gz")}
+
+    # move files if wanted
+    noutfiles <- file.path(outdir, outfiles)
+    outfiles <- normalizePath(outfiles)
+    if(!all(noutfiles == normalizePath(outfiles))){
+      file.rename(outfiles, noutfiles)
+      outfiles <- noutfiles
+    }
+
     return(outfiles)
   }
 
@@ -200,7 +225,17 @@ get_chunks <- function(beagle_file,
                sep = "\t")
       })
     }
-    return(fnames)
+
+    outfiles <- fnames
+    # move files if wanted
+    noutfiles <- file.path(outdir, outfiles)
+    outfiles <- normalizePath(outfiles)
+    if(!all(noutfiles == normalizePath(outfiles))){
+      file.rename(outfiles, noutfiles)
+      outfiles <- noutfiles
+    }
+
+    return(outfiles)
   }
 }
 
