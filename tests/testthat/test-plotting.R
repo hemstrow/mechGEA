@@ -100,3 +100,22 @@ test_that("migration_plots",{
   expect_true(methods::is(p$IBD, "ggplot"))
   expect_true(methods::is(p$map, "ggplot"))
 })
+
+test_that("manhattan_plots", {
+  # with one outfile; multiple outfiles will simply merge them.
+  tfile <- test_path("testdata", "small_example_results.RDS")
+  res <- readRDS(tfile)
+
+
+  # position info, which we generate here but is usally provided
+  snp_metadata <- data.table::data.table(SNP = unique(res$SNP_pvalues$SNP),
+                                         CHROM = sort(rep(paste0("CHROM_", 1:10), length.out = length(unique(res$SNP_pvalues$SNP)))))
+  snp_metadata[, POS := 1:.N, by = CHROM]
+
+  man <- plot_manhattan(res$SNP_pvalues, SNP_metadata = snp_metadata)
+
+})
+
+
+
+

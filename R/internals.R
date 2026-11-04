@@ -503,3 +503,18 @@ toc_hours <- function(tic, toc, msg) {
 .source_model <- function(model_name){
   system.file("stan", model_name, package = "mechGEA")
 }
+
+pal_picker <- function(n){
+  if(n <= 3){
+    pal <- khroma::color("highcontrast")(n)
+  } else if(n <= 7){
+    pal <- khroma::color("okabeito")(n + 1)[-1] # don't want black.
+  } else if(n <= 9){
+    pal <- khroma::color("light")(n)
+  } else if(n <= 23){
+    pal <- khroma::color("discreterainbow")(n)
+  } else{
+    pal <- khroma::color("batlow")(n)
+  }
+  return(pal)
+}

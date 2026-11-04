@@ -561,3 +561,174 @@ plot_gea <- function(stan_data,
               migration_selection_balance = msb_plots,
               association_plots = asso_plots))
 }
+
+#' Generate a manhattan plot one or more mechGEA outputs.
+#'
+#' Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
+#' concatenated along the x-axis. Works with \code{\link{mechGEA}} SNP_pvalue
+#' outputs; take either a single output or a list of outputs from multiple
+#' chunks (see details).
+#'
+#' @param SNP_pvalues data.frame or similar like that produced by
+#'   \code{\link{mechGEA}} in \code{$SNP_pvalues}. Contains three columns named
+#'   "SNP", "Env", and "nlogp" containing SNP IDs, names for environmental
+#'   effects, and -log p-values for associations. Alternately, a list of such
+#'   data.frames.
+#' @param SNP_metadata data.frame or similar containing metadata on SNPs. Must
+#'   have three columns named "SNP", "CHROM", and "POS" containing SNP IDs,
+#'   chromosomes, and positions for each SNP. Each SNP ID in the
+#'   \code{SNP_pvalues} "SNP" column must be represented in the "SNP" column of
+#'   \code{SNP_metadata}.
+#' @param vlines character (color) or FALSE, default FALSE. If a color, vertical
+#'   separator lines will be drawn between each chromosome. Widths controlled by
+#'   \code{vline_width}.
+#' @param vline_width numeric, default 2. Width of chromosome separator lines.
+#'   Ignored if \code{vlines} is FALSE.
+#' @param significant numeric, default NULL. Value at which a line will be drawn
+#'   designating significant SNPs. If highlight = "significant", SNPs above this
+#'   level will also be labeled.
+#' @param suggestive numeric, default NULL. Value at which a line will be drawn
+#'   designating suggestive SNPs. If highlight = "suggestive", SNPs above this
+#'   level will also be labeled.
+#' @param colors character, default c("black", "slategray3"). Colors to
+#'   alternate across chromosomes.
+#' @param chr_order character, default NULL. If provided, an ordered vector of
+#'   chromosome/scaffold/etc names by which to sort output.
+#' @param abbreviate_labels numeric or FALSE, default FALSE. If a numeric value,
+#'   x-axis chromosome names will be abbreviated using
+#'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
+#'   minimum length specified. Helpful when chromosome/scaffold/etc names are
+#'   very long.
+#'
+#' @author William Hemstrom
+#' @export
+#' @examples
+plot_manhattan <- function(SNP_pvalues,
+                           SNP_metadata,
+                           vlines = FALSE,
+                           vline_width = .25,
+                           significant = 5, suggestive = 3,
+                           colors = c("black", "slategray3"),
+                           chr_order = NULL,
+                           abbreviate_labels = FALSE,
+                           env_colors = NULL){
+
+  cum.bp <- cum.start <- cum.end <- y <- start <- end <- med <- NULL
+
+  #=============sanity checks==============================
+  dreamerr::check_set_arg(SNP_pvalues, SNP_metadata, .type = "data.frame ncol(3)")
+  SNP_pvalues <- data.table::as.data.table(SNP_pvalues)
+  SNP_metadata <- data.table::as.data.table(SNP_metadata)
+  msg <- character()
+
+
+  # columns OK?
+  expected_cols <- c("SNP", "CHROM", "POS")
+  missing_cols <- expected_cols %notin% colnames(SNP_metadata)
+  if(any(missing_cols)){
+    msg <- c(msg, paste0("Some expected column names not found in SNP metadata. Missing: \n\t", paste0(expected_cols[missing_cols], collapse = "\n\t")))
+  }
+
+  expected_cols <- c("SNP", "Env", "nlogp")
+  missing_cols <- expected_cols %notin% colnames(SNP_pvalues)
+  if(any(missing_cols)){
+    msg <- c(msg, paste0("Some expected column names not found in SNP pvalues. Missing: \n\t", paste0(expected_cols[missing_cols], collapse = "\n\t")))
+  }
+
+  # all SNPs accounted for?
+  bad_snps <- which(SNP_pvalues$SNP %notin% SNP_metadata$SNP)
+  if(length(bad_snps) > 0){
+    msg <- c(msg, paste0("Some SNP IDs in pvals not found in metadata. Number not found: ", length(bad_snps), "\n"))
+  }
+
+  if(length(msg) > 0){
+    stop(msg, collapse = "\n")
+  }
+
+  SNP_pvalues <- merge(SNP_pvalues, SNP_metadata)
+
+  stats <- SNP_pvalues; rm(SNP_pvalues)
+
+  plot_var <- "nlogp"; chr <- "CHROM"; bp <- "POS"
+
+  if(nrow(stats) == 0){
+    stop("No non-NA data found.\n")
+  }
+
+
+  #=============figure out adjusted positions on x axis================
+  # fetch chromosome info
+  if(is.factor(stats[[chr]])){
+    stats[[chr]] <- as.character(stats[[chr]])
+  }
+
+  if(!is.null(chr_order)){
+    stats[[chr]] <- factor(stats[[chr]], levels = chr_order)
+  }
+
+  # get adjusted x axis positions and figure out where chromsome tick marks should be placed.
+  chr.info <- tapply(stats[[bp]], stats[[chr]], max) # chromosome lengths
+  chr.centers <- (chr.info - tapply(stats[[bp]], stats[[chr]], min))/2 # chromosome centers
+  chr.info <- cumsum(chr.info) # cumulative lengths
+  cum.bp <- c(0, chr.info[-length(chr.info)]) # correct cummulative lengths
+  names(cum.bp) <- names(chr.info) # rename
+  cum.chr.centers <- cum.bp + chr.centers # cumulative chromosome centers
+  stats$start <- cum.bp[match(stats[[chr]], names(cum.bp))]
+  stats[,cum.bp := start + POS]
+
+  #============produce the plot========
+  if(is.null(env_colors)){
+    env_colors <- pal_picker(length(unique(stats[nlogp >= significant,]$Env)))
+  }
+
+  p <- ggplot2::ggplot(stats, ggplot2::aes(x = cum.bp, y = nlogp, color = as.factor(CHROM))) +
+    ggplot2::geom_point(show.legend = FALSE, size = 1) +
+    ggplot2::scale_color_manual(values = rep(c(colors), length(cum.chr.centers))) +
+    ggnewscale::new_scale_color() +
+    ggplot2::geom_point(data = stats[nlogp >= significant,], ggplot2::aes(x = cum.bp, y = nlogp, color = as.factor(Env)),
+                        size = 3) +
+    ggplot2::scale_color_manual(values = env_colors)
+
+  p <- p +
+    ggplot2::theme_bw() +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, vjust = 0.5),
+                   panel.grid.major.x = ggplot2::element_blank(),
+                   panel.grid.minor.x = ggplot2::element_blank(),
+                   strip.background = ggplot2::element_blank(),
+                   strip.text = ggplot2::element_text(hjust = 0.01)) +
+    ggplot2::xlab("Chromosome")
+
+  p <- p + ggplot2::ylab(bquote(-log[10] ~ italic("p")))
+  p <- p + ggplot2::guides(color = ggplot2::guide_legend("Env"))
+
+
+  #=============adjust the plot========
+  # significant/suggestive lines
+  if(!is.null(significant)){
+    p <- p + ggplot2::geom_hline(yintercept = significant, color = "#DDAA33")
+  }
+  if(!is.null(suggestive)){
+    p <- p + ggplot2::geom_hline(yintercept = suggestive, color = "#004488")
+  }
+
+
+  # abbreviate
+  if(!isFALSE(abbreviate_labels)){
+    p <- p + ggplot2::scale_x_continuous(label = abbreviate(names(cum.chr.centers),
+                                                            minlength = abbreviate_labels),
+                                         breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+  else{
+    p <- p + ggplot2::scale_x_continuous(label = names(cum.chr.centers),
+                                         breaks = cum.chr.centers, minor_breaks = NULL)
+  }
+
+
+  if(!isFALSE(vlines)){
+
+    cum.start <- cum.chr.centers + tapply(stats[[bp]], stats[[chr]], function(x) max(x)/2)
+    p <- p + ggplot2::geom_vline(xintercept = as.numeric(cum.start), color = vlines, linewidth = vline_width)
+  }
+
+ return(p)
+}
