@@ -6,10 +6,9 @@
 \alias{plot_migration}
 \alias{prepare_mig_data}
 \alias{estimate_migration}
-\alias{run_stan_gea_model}
+\alias{run_stan_GEA_model}
 \alias{estimate_neff}
 \alias{beta_summary}
-\alias{run_stan_GEA_model}
 \title{Mechanistic genome-environment association tests.}
 \usage{
 mechGEA(

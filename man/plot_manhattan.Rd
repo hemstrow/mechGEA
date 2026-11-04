@@ -19,16 +19,19 @@ plot_manhattan(
 }
 \arguments{
 \item{SNP_pvalues}{data.frame or similar like that produced by
-\code{\link{mechGEA}} in \code{$SNP_pvalues}. Contains three columns named
+\code{\link{mechGEA}} in \code{$SNP_pvalues} OR the output from
+\code{\link{mechGEA}} \ \code{\link{run_stan_GEA_model}} OR a list of a
+either of the two (mixing OK). If the former, contains three columns named
 "SNP", "Env", and "nlogp" containing SNP IDs, names for environmental
-effects, and -log p-values for associations. Alternately, a list of such
-data.frames.}
+effects, and -log p-values for associations.}
 
-\item{SNP_metadata}{data.frame or similar containing metadata on SNPs. Must
-have three columns named "SNP", "CHROM", and "POS" containing SNP IDs,
-chromosomes, and positions for each SNP. Each SNP ID in the
-\code{SNP_pvalues} "SNP" column must be represented in the "SNP" column of
-\code{SNP_metadata}.}
+\item{SNP_metadata}{data.frame or similar containing metadata on SNPs OR a
+path to a ".beagle" or ".beagle.gz" file containing SNP metadata OR a list
+of a either of the two (mixing OK). If the former, must have three columns
+named "SNP", "CHROM", and "POS" containing SNP IDs, chromosomes, and
+positions for each SNP. Each SNP ID in the \code{SNP_pvalues} "SNP" column
+must be represented in the "SNP" column of \code{SNP_metadata}. Assumes
+sorting is in the same order as in \code{SNP_pvalues}, across lists or not.}
 
 \item{vlines}{character (color) or FALSE, default FALSE. If a color, vertical
 separator lines will be drawn between each chromosome. Widths controlled by
@@ -62,6 +65,57 @@ Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
 concatenated along the x-axis. Works with \code{\link{mechGEA}} SNP_pvalue
 outputs; take either a single output or a list of outputs from multiple
 chunks (see details).
+}
+\examples{
+\dontrun{
+# run a model
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+phred <- beagle2pl(beagle, lines = 1:150)
+input_data <- prepare_metadata(sample_metadata)
+res <- mechGEA(phred,
+               patch_info = input_data$patch_info,
+               patches_xy = input_data$patches_xy,
+               migration_loci = 50,
+               env = input_data$env,
+               iter_sampling_gea = 100,
+               iter_warmup_gea = 200,
+               iter_sampling_mig = 100,
+               iter_warmup_mig = 200)
+
+# plot results
+plot_manhattan(res, beagle)
+## or
+plot_manhattan(res$SNP_pvalues, beagle)
+# or could provide a data.frame of SNP metadata
+
+
+# combine across result runs. Note that using chunk_beagle() is easier, than
+# manually splitting, but for the example we're just making two chunks
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+system(paste0("zcat ", beagle2,
+              " | head -n ", 301, " | gzip > test_sub.beagle.gz"))
+b <- fread(" test_sub.beagle.gz")
+b <- b[151:300,] # the second batch of lines
+fwrite(b, "test_sub.beagle.gz", sep = "\t",
+       col.names = TRUE, row.names = FALSE)
+
+phred <- beagle2pl("test_sub.beagle.gz")
+res2 <- mechGEA(phred,
+                patch_info = input_data$patch_info,
+                patches_xy = input_data$patches_xy,
+                migration_loci = 50,
+                env = input_data$env,
+                iter_sampling_gea = 100,
+                iter_warmup_gea = 200,
+                iter_sampling_mig = 100,
+                iter_warmup_mig = 200)
+
+# plot results
+plot_manhattan(list(res, res2), list(beagle, "test_sub.beagle.gz"))
+# Any combination of res/res$SNP_pvalues and filepaths/tables of metadata
+# are allowed in lists. Assumes everything IS IN THE SAME ORDER!
+}
+
 }
 \author{
 William Hemstrom

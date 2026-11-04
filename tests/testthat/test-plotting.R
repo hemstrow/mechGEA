@@ -109,11 +109,110 @@ test_that("manhattan_plots", {
 
   # position info, which we generate here but is usally provided
   snp_metadata <- data.table::data.table(SNP = unique(res$SNP_pvalues$SNP),
-                                         CHROM = sort(rep(paste0("CHROM_", 1:10), length.out = length(unique(res$SNP_pvalues$SNP)))))
+                                         CHROM = sort(rep(paste0("CHROM.", 1:10), length.out = length(unique(res$SNP_pvalues$SNP)))))
   snp_metadata[, POS := 1:.N, by = CHROM]
 
   man <- plot_manhattan(res$SNP_pvalues, SNP_metadata = snp_metadata)
+  man2 <- plot_manhattan(res, SNP_metadata = snp_metadata)
 
+  expect_true(ggplot2::is_ggplot(man)) # other tests can come later for basic plotting
+  expect_identical(man, man2)
+
+  ## test metadata matching from beagle
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  system(paste0("zcat ", beagle, " | head -n ", 151, " | gzip > test_sub.beagle.gz"))
+  bf <- fread("test_sub.beagle.gz")
+  bf$marker <- paste0(snp_metadata$CHROM, "_", snp_metadata$POS)
+  fwrite(bf, "test_sub.beagle.gz", sep = "\t", col.names = TRUE, row.names = FALSE)
+  man3 <- plot_manhattan(res$SNP_pvalues, "test_sub.beagle.gz", chr_order = paste0("CHROM.", 1:10))
+  expect_true(ggplot2::is_ggplot(man3)) # test the data in a minute
+  file.remove("test_sub.beagle.gz")
+
+  ## test that reordering chrs works
+  man1_reorder <- plot_manhattan(res$SNP_pvalues, SNP_metadata = snp_metadata, chr_order = paste0("CHROM.", 1:10))
+  xlabs <- ggplot2::ggplot_build(man1_reorder)
+  expect_equal(xlabs$layout$panel_params[[1]]$x$get_labels(), paste0("CHROM.", 1:10))
+  ### test that the values are sorted the same as when we did metadata from beagle, above
+  expect_equal(dplyr::arrange(man3@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env),
+               dplyr::arrange(man1_reorder@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env)) # same data means same plot.
+
+  #======================multiple plots -- there's a TON to check on metadata matching.==================
+  skip_on_cran(); skip_on_ci()
+
+  # prep--run another set
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  phred <- beagle2pl(beagle, lines = 151:300)
+
+  input_data <- prepare_metadata(sample_metadata)
+
+  res2 <- mechGEA(phred,
+                 patch_info = input_data$patch_info,
+                 patches_xy = input_data$patches_xy,
+                 migration_loci = 50,
+                 env = input_data$env,
+                 iter_sampling_gea = 100,
+                 iter_warmup_gea = 200,
+                 iter_sampling_mig = 100,
+                 iter_warmup_mig = 200)
+
+  snp_metadata2 <- data.table::data.table(SNP = unique(res2$SNP_pvalues$SNP),
+                                          CHROM = sort(rep(paste0("CHROM.", 1:10), length.out = length(unique(res$SNP_pvalues$SNP)))))
+  snp_metadata2[, POS := (1:.N) + 15, by = CHROM]
+
+  # basic plot, direct data for each.
+  man <- plot_manhattan(list(res$SNP_pvalues, res2$SNP_pvalues), SNP_metadata = list(snp_metadata,
+                                                                                     snp_metadata2))
+  expect_equal(length(unique(paste0(man@data$CHROM, "_", man@data$POS))), 300)
+  expect_true(all(man@data$POS[man@data$SNP >= 151] >= 16))
+
+  # mix for pvals
+  man2 <- plot_manhattan(list(res$SNP_pvalues, res2), SNP_metadata = list(snp_metadata,
+                                                                          snp_metadata2))
+  expect_equal(man@data, man2@data)
+
+  # mix for metadata sources
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  system(paste0("zcat ", beagle, " | head -n ", 301, " | gzip > test_sub.beagle.gz"))
+  bf <- fread("test_sub.beagle.gz")
+  bf <- bf[151:300,]
+  bf$marker <- paste0(snp_metadata2$CHROM, "_", snp_metadata2$POS)
+  fwrite(bf, "test_sub.beagle.gz", sep = "\t", col.names = TRUE, row.names = FALSE)
+
+  man2 <- plot_manhattan(list(res, res2$SNP_pvalues), SNP_metadata = list(snp_metadata,
+                                                              "test_sub.beagle.gz"))
+  expect_equal(dplyr::arrange(man@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env),
+               dplyr::arrange(man2@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env)) # same data means same plot.
+
+
+  # a combined data.frame for only one
+  r2t <-  copy(res2$SNP_pvalues)
+  r2t[,SNP := SNP + 150]
+  man3 <- plot_manhattan(rbind(res$SNP_pvalues, r2t), SNP_metadata = list(snp_metadata, "test_sub.beagle.gz"))
+  expect_equal(dplyr::arrange(man2@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env),
+               dplyr::arrange(man3@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env)) # same data means same plot.
+
+
+  # a split SNP data but a combined table of metadata
+  r2t <- copy(snp_metadata2)
+  r2t[,SNP := SNP + 150]
+  man3 <- plot_manhattan(list(res, res2$SNP_pvalues), SNP_metadata = rbind(snp_metadata, r2t))
+  expect_equal(dplyr::arrange(man2@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env),
+               dplyr::arrange(man3@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env)) # same data means same plot.
+
+  # lastly, split SNP data but a combined BEAGLE file
+  system(paste0("zcat ", beagle, " | head -n ", 301, " | gzip > test_sub.beagle.gz"))
+  bf <- fread("test_sub.beagle.gz")
+  bf$marker <- c(paste0(snp_metadata$CHROM, "_", snp_metadata$POS), paste0(snp_metadata2$CHROM, "_", snp_metadata2$POS))
+  fwrite(bf, "test_sub.beagle.gz", sep = "\t", col.names = TRUE, row.names = FALSE)
+  man3 <- plot_manhattan(list(res, res2$SNP_pvalues), SNP_metadata = "test_sub.beagle.gz")
+  expect_equal(dplyr::arrange(man2@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env),
+               dplyr::arrange(man3@data[,.(CHROM, POS, start, cum.bp, nlogp, Env)], CHROM, POS, Env)) # same data means same plot.
+
+
+  file.remove("test_sub.beagle.gz")
+  unlink("files", recursive = TRUE)
+  unlink("plot", recursive = TRUE)
+  unlink("stan", recursive = TRUE)
 })
 
 

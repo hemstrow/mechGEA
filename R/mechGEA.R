@@ -109,7 +109,7 @@
 #' @export
 #' @name mechGEA
 #' @aliases plot_gea plot_migration prepare_mig_data estimate_migration
-#'   run_stan_gea_model estimate_neff beta_summary
+#'   run_stan_GEA_model estimate_neff beta_summary
 #' @references
 #' Goel, N., et al. (2026). Identifying adaptive variation in
 #' spatially structured populations using low-coverage whole-genome sequencing
