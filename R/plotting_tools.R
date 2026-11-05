@@ -602,6 +602,8 @@ plot_gea <- function(stan_data,
 #'   \code{\link[base]{abbreviate}}, with each abbreviated label having the
 #'   minimum length specified. Helpful when chromosome/scaffold/etc names are
 #'   very long.
+#' @param env_colors character, default NULL. An optional vector of colors to
+#'   use for each environmental variable.
 #'
 #' @author William Hemstrom
 #' @export

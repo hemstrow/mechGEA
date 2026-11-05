@@ -59,6 +59,9 @@ x-axis chromosome names will be abbreviated using
 \code{\link[base]{abbreviate}}, with each abbreviated label having the
 minimum length specified. Helpful when chromosome/scaffold/etc names are
 very long.}
+
+\item{env_colors}{character, default NULL. An optional vector of colors to
+use for each environmental variable.}
 }
 \description{
 Creates a ggplot-based manhattan plot, where chromosomes/scaffolds/etc are
