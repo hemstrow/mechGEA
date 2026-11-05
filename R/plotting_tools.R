@@ -183,7 +183,7 @@ plot_gea <- function(stan_data,
                      env_colors = NULL){
   Env_var <- Locus <- SNP <- . <- nlogp <- Env <- color <- migration_off <- migration_on <- NULL
   type <- value <- variable <- facet <- muk <- `No migration` <- NULL
-  `Mean-field (1st correction)` <- logit <- env_value <- p_logit <- patch <- NULL
+  `Mean-field  (1st correction)` <- logit <- env_value <- p_logit <- patch <- NULL
 
   ## ---- Load -----------------------------------------------------------------
   data         <- stan_data; rm(stan_data)
@@ -668,6 +668,7 @@ plot_manhattan <- function(SNP_pvalues,
                            env_colors = NULL){
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <- med <- POS <- IDfac <- SNP <-  NULL
+  nlogp <- CHROM <- Env <- NULL
   #=============process input data==============================
   # processing the input p-values
   num_pvals <- 0
