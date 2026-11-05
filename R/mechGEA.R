@@ -110,11 +110,32 @@
 #' @name mechGEA
 #' @aliases plot_gea plot_migration prepare_mig_data estimate_migration
 #'   run_stan_GEA_model estimate_neff beta_summary
+#'
 #' @references
 #' Goel, N., et al. (2026). Identifying adaptive variation in
 #' spatially structured populations using low-coverage whole-genome sequencing
 #' data. *Molecular Biology and Evolution*, 43(10), msag255.
 #' https://doi.org/10.1093/molbev/msag255
+#'
+#' @returns
+#' A nested list containing model outputs. Different modules may return
+#' different portions of the following list; \code{mechGEA} will return every
+#' part. NIKUNJ, DETAIL WOULD BE GREAT!
+#'
+#' * SNP_pvalues: A data.table containing associations (\code{nlogp},
+#' \eqn{-\log_{e}} transformed p-values) for each SNP (numbered 1:n by input
+#' order \code{Phred}) compared to each environmental variable.
+#' * GEA_results: A list containing summaries of the GEA model fits.
+#' * migration_results: A n by n matrix where n is the number of patches;
+#' estimated migration rates between each patch.
+#' * Neff_results: A list containing the effective sample size estimates for
+#' each locus vs each environmental variable.
+#' * migration_plot: Plots of isolation-by-distance and migration rates between
+#' patches.
+#' * GEA_plots: Manhattan plot, model fit visualization, and migration-selection
+#' balances for each significant correlation from the GEA.
+#' * stan_and_migration_data: Formatted data which was used by the GEA and
+#' migration models.
 #'
 #' @examples
 #' # a basic run of the full pipeline

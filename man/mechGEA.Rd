@@ -242,6 +242,27 @@ produced by \code{\link{beta_summary}}\code{$beta_summary}.}
 
 \item{env_names}{character, vector of environmental variable names.}
 }
+\value{
+A nested list containing model outputs. Different modules may return
+different portions of the following list; \code{mechGEA} will return every
+part. NIKUNJ, DETAIL WOULD BE GREAT!
+\itemize{
+\item SNP_pvalues: A data.table containing associations (\code{nlogp},
+\eqn{-\log_{e}} transformed p-values) for each SNP (numbered 1:n by input
+order \code{Phred}) compared to each environmental variable.
+\item GEA_results: A list containing summaries of the GEA model fits.
+\item migration_results: A n by n matrix where n is the number of patches;
+estimated migration rates between each patch.
+\item Neff_results: A list containing the effective sample size estimates for
+each locus vs each environmental variable.
+\item migration_plot: Plots of isolation-by-distance and migration rates between
+patches.
+\item GEA_plots: Manhattan plot, model fit visualization, and migration-selection
+balances for each significant correlation from the GEA.
+\item stan_and_migration_data: Formatted data which was used by the GEA and
+migration models.
+}
+}
 \description{
 Core functions for the mechanistic GEA-with-migration pipeline, producing
 output files and plots in the working directory (and returned as an object).
