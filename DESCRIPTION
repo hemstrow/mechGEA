@@ -54,3 +54,4 @@ Depends:
     R (>= 3.6.0)
 LazyData: true
 Config/testthat/edition: 3
+URL: https://hemstrow.github.io/mechGEA/

@@ -138,7 +138,8 @@ data. This is useful if you wish to assess migration once with a set of
 loci and then use that assessment for other genomic chunks (see
 \code{stop_after_migration} to estimate migration and then stop the model).}
 
-\item{N_sim_mig}{integer, default 100. NIKUNJ HERE PLEASE! Ignored if
+\item{N_sim_mig}{integer, default 100. Number of times genotypes are
+re-sampled when estimating the diversity for migration. Ignored if
 \code{migration_results} are provided.}
 
 \item{migration_loci}{integer, default 1000. Number of loci to use from
@@ -164,8 +165,8 @@ the migration model. If the model does not converge after
 \item{target_div_pct_mig}{numeric, default 1. Maximum percentage of
 divergences allowed during migration model fitting.}
 
-\item{target_rhat_pct_mig}{numeric, default 1. Maximum rhat allowed during
-migration model fitting.}
+\item{target_rhat_pct_mig}{numeric, default 1. Maximum percentage of rhat >
+1.05 allowed during fitting.}
 
 \item{chains_mig}{integer, default 4. Number of chains to run for the
 Bayesian migration model fitting.}

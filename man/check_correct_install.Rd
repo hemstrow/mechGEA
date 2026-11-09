@@ -8,8 +8,8 @@ check_correct_install(status = Sys.getenv("mechGEA_full_install"))
 }
 \arguments{
 \item{stats}{install status, fetched from a system environment (which should
-not be manually updated; this function will check and update the status as)
-necissary.}
+not be manually updated; this function will check and update the status as
+needed).}
 }
 \description{
 This function runs a series of checks to see that mechGEA is correctly

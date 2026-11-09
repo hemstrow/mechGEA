@@ -7,6 +7,13 @@
 \description{
 A user-friendly interface for conducting Bayesian Genotype-Environment Association (GEA) tests with genotype-likelihood or pool-seq data, based on Goel et al. (2026)'s approaches incorporating migration rate estimation in spatially structured populations.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://hemstrow.github.io/mechGEA/}
+}
+
+}
 \author{
 \strong{Maintainer}: William Hemstrom \email{hemstrow@gmail.com}
 
