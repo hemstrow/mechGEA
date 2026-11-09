@@ -1,0 +1,745 @@
+---
+title: "mechGEA"
+output: 
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{mechGEA}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+**mechGEA** is a mechanistic genotype–environment association (GEA) pipeline
+for identifying loci involved in local adaptation, designed to work directly
+with low-coverage sequencing data.
+
+## Why a mechanistic GEA?
+
+Most GEA methods have two limitations:
+
+1. **They ignore uncertainty in allele frequencies.** Allele frequencies are
+   estimated from a finite, often incomplete sample of genotypes, and with
+   low-coverage data the genotypes themselves are uncertain. Treating these
+   estimates as known can bias downstream inference.
+2. **They are phenomenological.** Regression-based approaches (e.g. GLMs)
+   assume a particular shape for the relationship between environment and allele
+   frequency, but are only loosely connected to evolutionary theory.
+
+mechGEA instead builds the analysis on an explicit model of evolution.
+
+## How it works
+
+mechGEA is a hierarchical Bayesian model, with three linked levels:
+
+- **Data model:** links the observed sequencing data to unobserved patch-level
+  allele frequencies via genotype likelihoods, so uncertainty from low read
+  depth, small samples and missing data is carried through the analysis.
+- **Process model:** describes how evolutionary forces generate those allele
+  frequencies. Building on Wright's island model, allele frequencies in each
+  patch settle into an equilibrium shaped by drift, mutation and migration,
+  tilted by selection whose strength depends on local environmental conditions.
+  Each locus gets an environmental sensitivity coefficient (β); neutral loci
+  have β ≈ 0, while adaptive loci track the environment across patches.
+- **Parameter model:** encodes the expectation from neutral theory that most
+  of the genome is not under local selection. A horseshoe prior on β shrinks
+  most loci towards zero while letting a few strongly associated loci escape,
+  which limits false positives across thousands of loci.
+
+In practice, the pipeline (1) estimates migration among sampled patches,
+(2) fits the GEA model while accounting for that migration, and (3) reports
+per-locus, per-environment β estimates with credible intervals. Loci whose
+credible intervals exclude zero are candidates for local adaptation.
+
+# Installation
+
+mechGEA fits its models with Stan (via `cmdstanr` and `rstan`) and handles
+spatial data with `sf` and `terra`. Installing these dependencies manually can
+be difficult, in part because they must be installed in a particular order under
+different C++ compiler versions. The usual installation tools
+(`install.packages` or the `remotes` and `pak` packages) cannot handle on their
+own; installing with these tools alone will only produce a partial-install. We
+therefore **strongly recommend installing mechGEA into a dedicated conda
+environment** using a two-step process via the function `setup_mechGEA_env()`
+included in mechGEA.
+
+> mechGEA is currently tested and maintained for **Linux** only. Support for
+> Windows and macOS is limited.
+
+**1. Initial install of mechGEA** from GitHub, using `remotes` or `pak`:
+
+```{r, eval = FALSE}
+install.packages("remotes") # skip if already installed!
+remotes::install_github("hemstrow/mechGEA")
+```
+
+This will install the package, but the core functions will be turned off unless
+a complete install is done. The full package install can then be completed with
+the `setup_mechGEA_env()` utility.
+
+**2. Build the complete environment** with `setup_mechGEA_env()`:
+
+```{r, eval = FALSE}
+mechGEA::setup_mechGEA_env() # creates a conda environment called "mechGEA"
+```
+
+This builds a self-contained conda environment (using the `reticulate` package)
+with everything mechGEA needs: R, C/C++/Fortran compilers, CmdStan, `cmdstanr`,
+`rstan`, `sf`, `terra`, all other dependencies, and mechGEA itself. No system
+libraries or administrator rights are required.
+- If conda is not found, Miniconda is installed automatically. To use an
+existing conda installation (other than the default), provide a path to the
+conda executable: `setup_mechGEA_env(conda_path = "/path/to/conda")`.
+- Use `name` to choose a different environment name. The function stops if an
+environment with that name already exists.
+- Setup compiles several packages and can take a long time. At the end, check
+that the printed CmdStan path points inside the conda environment.
+
+**3. Activate the environment** in bash to run analyses, then either run an R script or start up an R session:
+
+```{bash, eval = FALSE}
+conda activate mechGEA
+Rscript path/to/my_analysis.R
+```
+
+`example_slurm_job()` (see *Large datasets*) depends on an installed
+environment. For manual installation, try checking out the code executed by
+`setup_mechGEA_env()` and following the install order noted there:
+
+```{r, eval = FALSE}
+example_slurm_job
+```
+
+
+# Check the installation
+
+```{r, eval = FALSE}
+library(mechGEA)
+
+# Run checks and return TRUE if everything is OK. Also run automatically, only
+# needs to be run once per session.
+check_correct_install() 
+
+```
+
+
+## Input data
+
+mechGEA works from genotype likelihoods rather than called genotypes, so it
+can be applied to any data from which likelihoods can be estimated, including
+low-coverage whole-genome sequencing and reduced-representation (e.g. RADseq)
+data. Likelihoods in BEAGLE format (e.g. from ANGSD) can be converted with
+`beagle2pl()`.
+
+## Citation
+
+If you use mechGEA, please also cite:
+
+> Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. & Hooten, M.B.
+> (2025). Identifying genomic adaptation to local climate using a mechanistic
+> evolutionary model. *Methods in Ecology and Evolution*, 16(10), 2448–2460.
+> <https://doi.org/10.1111/2041-210X.70117>
+
+> Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton, P.E.,
+> Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. & Hooten, M.B. 
+> (2026). Identifying adaptive variation in spatially structured populations 
+> using low-coverage whole-genome sequencing data. 
+> *Molecular Biology and Evolution*, 43(10), msag255. 
+> <https://doi.org/10.1093/molbev/msag255>
+
+This vignette walks through a complete analysis of the bundled example data set
+(200 individuals in 20 patches, 1,500 loci, 5 environmental variables). The 
+pipeline has three steps, which are *automatically run by the * `mechGEA()` 
+*wrapper function*:
+
+1. Preparing genotype likelihoods and patch metadata
+2. Estimating migration between patches
+3. Fit the GEA model
+4. Summarise and plot results
+
+
+# Quick-start Guide
+
+Here, we will walk through a basic analysis of the example data included in
+this package (`example_gl` and `sample_metadata`): 200 individuals
+sampled across 20 patches, genotyped at 1,500 loci, with five environmental 
+variables. We will look at the input formats, prepare patch metadata, 
+estimate migration among patches, fit the mechanistic GEA model, and 
+summarise and plot the results. We first run the full pipeline with 
+a single call to `mechGEA()`, then step through each stage individually.
+
+```{r}
+library(mechGEA)
+```
+
+# Data import
+
+mechGEA needs four inputs:
+
+| Input | Description |
+|---|---|
+| `Phred` | Phred-scaled genotype likelihoods, one row per locus and one column per individual; genotypes comma separated with missing data marked "." |
+| `patch_info` | Patch identification for each individual |
+| `patches_xy` | Coordinates of each patch |
+| `env` | Z-scaled (mean 0, sd 1), uncorrelated environmental variables for each patch |
+
+For the example data, all four are stored in the `example_gl` list:
+
+> **Important:** Individuals in `sample_metadata` must be in the **same order**
+> as the columns (individuals) of the genotype likelihoods, and all individuals
+> from the same patch must be in **consecutive rows**. Patches must in 
+> `patches_xy` and `env` must also be sorted by order-of-appearance in 
+> `patch_info`.
+
+
+```{r}
+str(example_gl, max.level = 1)
+```
+
+## Generating correctly formatted metadata from an `sf` object.
+
+If your sample metadata is stored per individual in an `sf` object with one row
+per individual and environmental values attached, as in the `sample_metadata`
+example data, the`prepare_metadata()` function can be used to convert it into 
+`patch_info`, `patches_xy`, and `env` objects:
+
+```{r}
+head(sample_metadata)
+```
+
+```{r, eval = FALSE}
+meta <- prepare_metadata(sample_metadata)
+```
+
+It is important to note that the GEA model assumes environmental variables are
+uncorrelated and Z-scaled. The `prune_envs()` function can be used to prune
+highly correlated environmental variables according to a correlation threshold
+by sequentially removing the variables correlated with the highest number of
+other variables. `prune_envs()` also Z-scales data.
+
+```{r, eval = FALSE}
+# removes one env from any pair with a correlation coefficient above 0.7
+# (or below -0.7).
+meta$env <- prune_envs(meta$env, r2 = 0.7)
+```
+
+The resulting, correctly formatted data should be essentially identical to that
+in the `example_gl` data set, albeit without genotypes.
+
+### Patch metadata details:
+
+`patch_info` is a two-column data.frame with columns `ind_id` and `patch`.
+Its rows must be in the same order as the columns of `Phred`, and 
+**individuals must be sorted in blocks by patch**: all individuals 
+from one patch must be in a block (sorted next to each other).
+
+```{r}
+head(example_gl$patch_info)
+```
+
+`patches_xy` gives coordinates for each patch, with columns `patch`, `lat` and
+`lon`. `env` has a `patch` column followed by one column per environmental
+variable, each Z-scaled (mean = 0, sd = 1). Lat/lon coordinates are recommended
+to be in “WGS 84 (EPSG:4326)” coordinate reference for automatic plotting, but
+this is not required. Both must list patches in the same order in which patches
+first appear in `patch_info`.
+
+```{r}
+head(example_gl$patches_xy)
+head(example_gl$env)
+```
+
+A quick sanity check before running anything:
+
+```{r}
+patch_order <- unique(example_gl$patch_info$patch)
+identical(patch_order, example_gl$patches_xy$patch)
+identical(patch_order, example_gl$env$patch)
+identical(colnames(example_gl$likelihoods), example_gl$patch_info$ind_id)
+```
+
+All three should be `TRUE`. Note that these checks are also run automatically.
+
+## Genotype likelihoods
+
+Rather than called genotypes, mechGEA uses genotype likelihoods, so uncertainty
+from low read depth is carried through the model. Each cell holds three 
+comma-separated Phred-scaled likelihoods for the three possible genotypes 
+(homozygous reference, heterozygote, homozygous alternate). Phred-scaling 
+follows the equation:
+\deqn{PL(\text{genotype}) = -10 \times \log_{10}\left( P(\text{Data} \mid \text{Genotype}) \right)}
+with the lowest Phred-scaled genotype (the most likely genotype) assigned a zero
+and everything else scaled to that value.
+
+
+```{r}
+dim(example_gl$likelihoods)          # loci x individuals
+example_gl$likelihoods[1:5, 1:5]
+```
+
+Genotype likelihoods in BEAGLE format (for example, `.beagle.gz` output from
+ANGSD) can be converted to this format with `beagle2pl()`. Each cell holds three
+Phred-scaled genotype likelihoods (AA, AB, BB), (again, rescaled so the most
+likely genotype is 0). Correspondingly, a phred-likelihood of 10 means that
+genotype is 10× less likely than the likelihood with a score of 0. "." marks
+missing data.
+
+An example BEAGLE file is included with the package:
+
+```{r}
+bfile <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+Phred <- beagle2pl(bfile)
+dim(Phred)
+```
+
+`beagle2pl()` does not keep sample names from the beagle file by default (since
+many programs, like ANGSD, name individuals "Ind0" through "Ind(n-1)"). The
+`beagle2pl()` function allows for sample names to be provided via the 
+`ind_names` argument.
+
+**Note: this assumes `sample_metadata` is in the same order as the BAM list used 
+to create the BEAGLE file.** If it is not, provide `ind_names` in the BAM list
+order and use the `ind_order` argument to resort individuals on read-in. This
+can also be used to re-sort individuals which are not in blocks by patch.
+
+```{r}
+colnames(Phred) <- sample_metadata$ind_id
+Phred[1:5, 1:5]
+```
+
+# Running the full pipeline
+
+`mechGEA()` runs every step of the analysis in one call:
+
+1. **Data preparation**: validates the inputs, converts Phred scores to
+   log-likelihoods, and builds the data for both models.
+2. **Migration estimation**: fits the Bayesian migration model on a random
+   subset of loci.
+3. **GEA model fitting**: fits the mechanistic GEA model to all loci,
+   accounting for the estimated migration.
+4. **Summaries and plots**: identifies adaptive (locus, environment) pairs and
+   plots the results.
+5. **Effective sample size**: estimates effective sample sizes for each locus/
+   environmental variable pair.
+
+Results are returned as a list and also written to `files/` and `plot/` in the
+**current working directory**, so run it in a dedicated folder.
+
+The settings below are deliberately small so that the example finishes
+quickly (about an hour on a 22-core server). They are **not** suitable for real
+analyses; use the defaults, or larger values, for those.
+
+
+```{r, eval = FALSE}
+
+res <- mechGEA(Phred      = example_gl$likelihoods,
+               patch_info = example_gl$patch_info,
+               patches_xy = example_gl$patches_xy,
+               env        = example_gl$env,
+               migration_loci    = 1000,   # loci used to estimate migration
+               N_sim_mig         = 20,
+               chains_mig        = 2,
+               iter_warmup_mig   = 200,
+               iter_sampling_mig = 200,
+               iter_warmup_gea   = 100,
+               iter_sampling_gea = 100,
+               par = 12)                   # cores to use
+str(res, max.level = 1)
+
+```
+
+Each step in the pipeline has quite a few arguments; these are described in `mechGEA`'s documentation.
+
+```{r, eval = FALSE}
+?mechGEA
+```
+
+# Step by step
+
+The same analysis can be run one stage at a time, which is useful for checking model fits along the way or reusing intermediate results.
+
+## 1. Prepare data
+
+`prepare_mig_data()` builds the input data for both the migration model and the GEA model:
+
+```{r, eval = FALSE}
+dat <- prepare_mig_data(Phred      = example_gl$likelihoods,
+                        patch_info = example_gl$patch_info,
+                        patches_xy = example_gl$patches_xy,
+                        env        = example_gl$env,
+                        migration_loci = 200,
+                        N_sim_mig      = 20)
+names(dat)
+```
+
+## 3. Check effective sample size
+
+Before fitting any models, it is worth checking how much information your
+data actually contain. With low-coverage data, each sequenced individual
+carries less information than a confidently genotyped one. `estimate_neff()`
+estimates the effective number of individuals given the observed genotype
+uncertainty, reported as N_eff / N (1 = no information lost to low coverage).
+
+```{r, eval = FALSE}
+neff <- estimate_neff(dat$stan_data)
+str(neff, max.level = 1)
+```
+
+| Element | Contents |
+|---|---|
+| `loci_used` | Loci used for the estimate (a random subset of up to 1,000) |
+| `TwoN_eff_*` | Effective number of allele copies sampled, per locus (rows) and patch (columns) |
+| `G_eff_*` | Effective allele counts, per locus and patch |
+| `*_stan` / `*_ana` | Estimates from the Stan model and from an analytical approximation |
+| `Neff_mean` | Mean ratio of effective to actual sample size (1 = no information lost) |
+
+In the example data, mean N_eff / N was about 0.80, so 200 low-coverage
+individuals carry roughly the information of 160 high-coverage individuals.
+This step takes a few minutes (~4-6 min for the example data).
+
+## 3. Estimate migration
+
+`estimate_migration()` fits the Bayesian migration model. 
+
+```{r, eval = FALSE}
+mig <- estimate_migration(dat$migration_data,
+                          chains_mig = 2,
+                          iter_warmup_mig = 200,
+                          iter_sampling_mig = 200,
+                          par = 4)
+
+plot_migration(mig, dat$migration_data, example_gl$patches_xy)
+```
+
+## 4. Fit the GEA model
+
+`run_stan_GEA_model()` fits the mechanistic GEA model, accounting for estimated migration:
+
+```{r, eval = FALSE}
+gea <- run_stan_GEA_model(dat$stan_data, mig,
+                          iter_warmup_gea = 100,
+                          iter_sampling_gea = 100,
+                          par = 4)
+names(gea)
+```
+
+## 5. Summarise and plot
+
+Each locus gets an environmental sensitivity coefficient (β) for each environmental variable. `beta_summary()` summarizes their posterior distributions, and `plot_gea()` plots them. Loci whose credible intervals exclude zero are candidates for local adaptation. The `beta_summary` step is the most memory-intensive step of the entire pipeline. For high-performance computing (HPC) clusters, it might be a good idea to set-up a pipeline manually and allow more memory for this step if needed.
+
+```{r, eval = FALSE}
+env_names <- colnames(example_gl$env)[-1]
+
+bs <- beta_summary(gea$beta_draw,
+                   nloci = nrow(example_gl$likelihoods),
+                   nenv  = length(env_names))
+head(bs$beta_summary)
+
+plot_gea(dat$stan_data, mig, gea$beta_draw, bs$beta_summary,
+         gea$rho_kappa_mu, env_names = env_names, CI = 0.95)
+```
+
+# Outputs
+
+`mechGEA()` returns a list with seven elements:
+
+| Element | Contents |
+|---|---|
+| `SNP_pvalues` | Association results for every (locus, environment) pair |
+| `GEA_results` | Posterior draws and summaries from the GEA model |
+| `migration_results` | Estimated patch × patch migration matrix |
+| `Neff_results` | Effective sample size estimates (see *Check effective sample size*) |
+| `migration_plot` | Migration plots (ggplot objects) |
+| `GEA_plots` | GEA plots (ggplot objects) |
+| `stan_and_migration_data` | The prepared model inputs (`stan_data` and `migration_data`) |
+
+## Association results
+
+`SNP_pvalues` is a data.table with one row per (locus, environment) pair
+(1,500 loci × 5 environments = 7,500 rows):
+
+| Column | Contents |
+|---|---|
+| `SNP` | Locus index (row of `Phred`) |
+| `Env` | Environmental variable |
+| `nlogp` | −log(p) for the association; larger values mean stronger evidence |
+
+A pair is called adaptive when `nlogp` exceeds −log(1 − 0.95), which is about 3.0.
+This is the horizontal line in the Manhattan plot.
+To list the adaptive pairs:
+
+```{r, eval = FALSE}
+adaptive <- res$SNP_pvalues[nlogp > -log(1 - 0.95)]
+nrow(adaptive)    # 23 in the example data
+head(adaptive)
+```
+
+## GEA model results
+
+`beta_summary` gives one row per β, named `Beta[e, l]` for environment `e` and
+locus `l` (e.g. `Beta[3,1]` is locus 1's sensitivity to `env3`):
+
+| Column | Contents |
+|---|---|
+| `variable` | Parameter name, `Beta[environment, locus]` |
+| `mean`, `median` | Posterior mean and median of β |
+| `sd`, `mad` | Posterior standard deviation and median absolute deviation |
+| `q5`, `q95` | 5% and 95% posterior quantiles  |
+| `rhat` | R-hat convergence diagnostic (should be close to 1) |
+| `ess_bulk`, `ess_tail` | Effective sample sizes of the posterior draws |
+
+Note that `q5`/`q95` are fixed at a 90% interval.
+
+```{r, eval = FALSE}
+head(res$GEA_results$beta_summary)
+```
+
+## Migration matrix
+
+`migration_results` is a symmetric patch × patch matrix of **posterior mean**
+migration rates. Off-diagonal entries are the migration rates between pairs of
+patches (relative rates, for the default `migration_fast` model). This
+matrix can be passed to later runs through `migration_results` (see *Large
+datasets*); as in the GEA model, the posterior mean is treated as known.
+
+```{r, eval = FALSE}
+round(res$migration_results[1:5, 1:5], 2)
+head(res$migration_results)
+```
+
+```{r, eval = FALSE}
+str(res, max.level = 1)
+head(res$SNP_pvalues)
+```
+
+It also writes intermediate results and plots to the working directory:
+
+- `files/`: `.RDS` files from each stage (`1_` data preparation, `2_` migration,
+  `4_` GEA model, `5_` adaptive loci, `6_` effective sample size). These can be
+  reloaded with `readRDS()` without re-running the model.
+- `plot/`: PDF figures, shown below.
+
+Because migration results are saved, they can be reused for other runs via
+`migration_results = res$migration_results` (see *Large datasets*). Plots of 
+migration results are also stored in `$migration_plot`:
+
+```{r, eval = FALSE}
+res$migration_plot$IBD # plot of isolation-by-distance
+res$migration_plot$map # plot of connectivity on space
+```
+
+
+## Genotype–environment associations
+
+The GEA results generate three plots (alongside the p-values discussed above):
+
+### Manhattan plots
+
+The Manhattan plot shows the evidence for association at each locus for each
+environmental variable. In the example data, mechGEA identifies **~23 adaptive
+(locus, environment) pairs** at a 95% credible interval. Manhattan plots are
+stored at.
+
+```{r, eval = FALSE}
+res$GEA_plots$manhattan
+```
+
+Note that the `plot_manhattan` function cann be used if multiple runs were conducted
+or if more detailed chromosomal locations are available for each locus. The first
+argument takes either a `mechGEA` result, the `$SNP_pvalues` table of a `mechGEA`
+result, or a list containing multiple of either (mixing OK). The second argument
+takes either a table of locus metadata (columns "SNP", "CHROM", and "POS"),
+a path to the beagle file which was used to run the data, or a list containing
+multiple of either.
+
+```{r, eval = FALSE}
+beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+plot_manhattan(res, beagle)
+```
+
+### Migration-selection balance plots
+
+[NIKUNJ PLEASE CHECK THIS]
+
+The balance between migration and selection at each adaptive locus. Each panel
+shows one adaptive locus, with patches plotted against the associated
+environmental variable. Blue points ("No migration") are the expected allele
+frequency in each patch under local selection alone, treating patches as
+isolated. Orange points ("Mean-field (1st correction)") add migration: each
+patch's expected frequency is shifted toward the frequency of its immigrants,
+i.e. the migration-weighted average of the other patches' no-migration
+frequencies. Values are averaged over posterior draws, and arrows run from the
+no-migration to the migration-corrected value.
+
+Short arrows mean selection dominates and the patch stays near its locally
+favoured frequency. Long arrows mean gene flow pulls the patch away from its
+local optimum, which is strongest for patches that receive many migrants from
+patches with different favoured frequencies.
+
+For each adaptive (locus, environment) pair, selection in each patch is
+s = β × (environmental value of that patch), so patches with more extreme
+environments experience stronger selection, and the sign of β sets its
+direction. ρ, by contrast, scales how strongly migration affects that locus.
+In the migration–selection balance plot, only the associated environmental
+variable is used for each locus.
+
+```{r, eval = FALSE}
+res$GEA_plots$migration_selection_balance
+```
+
+### Association plots
+Association plots show the strength and direction of genotype-environment association for each significantly asosciated locus/environment pair.
+
+```{r, eval = FALSE}
+res$GEA_plots$association_plots
+```
+
+
+# Large datasets
+
+Whole-genome data sets are usually too large to fit in a single model run. The
+recommended approach is to split the data into chunks of loci and run each
+chunk separately, ideally in parallel on a computing cluster.
+
+mechGEA has a few utilities to help with this:
+
+1. `get_chunks()` splits a ".beagle" or ".beagle.gz" file into chunks containing n loci.
+2. `example_slurm_job` generates directories, data and metadata files, and a ready-to-run job script for SLURM clusters (which can be modified for other job-management engines). This script will run `mechGEA` on each BEAGLE chunk.
+
+## Splitting data into chunks 
+
+`get_chunks()` splits a BEAGLE file into smaller BEAGLE files of
+`loci_per_chunk` loci each, reading the input in pieces so that the full file
+never has to be loaded into memory. e.g recommended 50k SNPs per chunk at max
+for whole genome dataset
+
+```{r, eval = FALSE}
+bfile  <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+chunks <- get_chunks(bfile, 
+                     loci_per_chunk = 500, # loci per chunk, use 50-100k for WGS
+                     outdir = ".") # save files to pwd. Default uses beagle dir.
+chunks
+#> [1] "chunk_0.beagle.gz" "chunk_1.beagle.gz" "chunk_2.beagle.gz"
+```
+
+## Running on a SLURM cluster
+
+`example_slurm_job()` generates a SLURM array job that runs `mechGEA()` on each
+BEAGLE file as a separate task:
+
+```{r, eval = FALSE}
+sh <- example_slurm_job(beagle_files    = chunks,
+                        sample_metadata = sample_metadata,
+                        output_dir      = "results",
+                        conda_env       = "mechGEA")
+sh
+```
+
+Note that the `example_slurm_job` can take all of the arguments to `mechGEA` and
+will also prune environmental variables using `prune_envs()` according to the
+supplied arguments. `example_slurm_job` also takes a handful of resource 
+arguments and can automatically install a conda environment. See the 
+documentation for details:
+
+```{r, eval = FALSE}
+?example_slurm_job
+```
+
+
+This writes the following files to `./control/` (change this with
+`control_file_prefix`):
+
+| File | Purpose |
+|---|---|
+| `example_slurm_array_job.sh` | SLURM array script, one task per BEAGLE file |
+| `example_array_rscript.R` | R script run by each task |
+| `beaglelist.txt` | list of BEAGLE files |
+| `sample_metadata.RDS` | prepared metadata (`patch_info`, `patches_xy`, `env`) |
+| `parmfile.RDS` | additional arguments passed to `mechGEA()` |
+
+Each task converts its BEAGLE file with `beagle2pl()`, runs `mechGEA()` in its
+own sub-directory of `output_dir` (`partition_<task>_<chunk name>`), and
+writes its results there. The final outputs (e.g. the results of `res <- mechGEA(...)`) will be saved
+as `final_results.RDS`.
+
+## Manhattan plots across many results
+
+## Reusing migration estimates
+
+Migration only needs to be estimated once. Using one chunk to estimate migration
+may be desirable to reduce runtime. To do so, estimate migration from a subset
+of loci with `stop_after_migration = TRUE`, then pass the result to every task
+through `migration_results`, so that all chunks share the same migration
+estimate:
+
+```{r, eval = FALSE}
+# first, run on one chunk--set these to read in and run on your mig chunk
+mig_phred <- beagle2pl("path/to/my/chunk.beagle.gz")
+mig_run <- mechGEA(Phred      = mig_phred,
+                   patch_info = example_gl$patch_info,
+                   patches_xy = example_gl$patches_xy,
+                   env        = example_gl$env,
+                   stop_after_migration = TRUE)
+
+# save the migration results:
+saveRDS(mig_run$migration_results, "mig_res.RDS")
+
+sh <- example_slurm_job(beagle_files      = chunks,
+                        sample_metadata   = example_gl,
+                        output_dir        = "results",
+                        conda_env         = "mechGEA",
+                        migration_results = "mig_res.RDS")
+```
+
+## Before submitting
+
+The generated shell script is a template and **must be edited to match your
+cluster** before use (see the notes at the top of the file). 
+
+```{bash, eval = FALSE}
+sbatch control/example_slurm_array_job.sh
+```
+
+## Combining manhattan plots
+
+As mentioned above, the `plot_manhattan` function can be used to combine plot results across runs.
+
+```{r, eval = FALSE}
+
+results <- c("path/to/partion_1/final_results.RDS",
+             ..., # list the rest of the files
+             "path/to/partion_n/final_results.RDS")
+
+chunks <- c("path/to/partion_1/input.beagle.gz",
+             ..., # list the rest of the files
+             "path/to/partion_n/input.beagle.gz")
+
+plot_manhattan(results, chunks)
+
+```
+
+
+## Runtime
+
+On a 12-core server, the example above (1,500 loci, 200 individuals, with the
+quick settings) took about one hour:
+
+| Step | Time |
+|---|---|
+| Data preparation | ~15 s |
+| Migration model | ~1.5 min |
+| GEA model | ~52 min |
+| Plotting | ~1 min |
+| Effective sample size | ~6 min |
+
+The GEA model dominates runtime and scales with the number of loci and
+iterations, so for genome-scale data use the chunked workflow described below.

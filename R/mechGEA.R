@@ -26,7 +26,8 @@
 #'   \code{patch_info}. Data fitting this format can be produced by
 #'   \code{\link{prepare_metadata}} and uncorrelated envs can be selected using
 #'   \code{\link{prune_envs}}.
-#' @param N_sim_mig integer, default 100. NIKUNJ HERE PLEASE! Ignored if
+#' @param N_sim_mig integer, default 100. Number of times genotypes are
+#'   re-sampled when estimating the diversity for migration. Ignored if
 #'   \code{migration_results} are provided.
 #' @param migration_loci integer, default 1000. Number of loci to use from
 #'   \code{Phred} to use for estimating migration. Must be equal to or less than
@@ -44,8 +45,8 @@
 #'   \code{max_attempts_mig} tries, the best fit model will be used.
 #' @param target_div_pct_mig numeric, default 1. Maximum percentage of
 #'   divergences allowed during migration model fitting.
-#' @param target_rhat_pct_mig numeric, default 1. Maximum rhat allowed during
-#'   migration model fitting.
+#' @param target_rhat_pct_mig numeric, default 1. Maximum percentage of rhat >
+#'   1.05 allowed during fitting.
 #' @param chains_mig integer, default 4. Number of chains to run for the
 #'   Bayesian migration model fitting.
 #' @param iter_sampling_mig integer, default 1000. Number of sampling iterations
@@ -221,7 +222,7 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                     stop_after_migration = FALSE,
                     par = parallel::detectCores() - 2){
 
-  if(!.check_correct_install()){
+  if(!check_correct_install()){
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
 
@@ -539,7 +540,7 @@ estimate_migration <- function(migration_data,
                                refresh_mig = 200,
                                par = parallel::detectCores() - 2){
 
-  if(!.check_correct_install()){
+  if(!check_correct_install()){
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
 
@@ -715,7 +716,7 @@ run_stan_GEA_model <- function(stan_data,
                                iter_sampling_gea = 500,
                                seed = 42,
                                par = parallel::detectCores() - 2){
-  if(!.check_correct_install()){
+  if(!check_correct_install()){
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
 
@@ -842,7 +843,7 @@ run_stan_GEA_model <- function(stan_data,
 #' @export
 #' @describeIn mechGEA Estimate effective sample sizes for data for \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 estimate_neff <- function(stan_data){
-  if(!.check_correct_install()){
+  if(!check_correct_install()){
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
   tictoc::tic("estimating Neff time")
@@ -957,7 +958,7 @@ estimate_neff <- function(stan_data){
 #' @export
 #' @describeIn mechGEA Calculate parameter summaries from a \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 beta_summary <- function(beta_draw, nloci, nenv){
-  if(!.check_correct_install()){
+  if(!check_correct_install()){
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
 

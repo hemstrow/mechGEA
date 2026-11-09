@@ -2,6 +2,7 @@
 
 export(beagle2pl)
 export(beta_summary)
+export(check_correct_install)
 export(estimate_migration)
 export(estimate_neff)
 export(example_slurm_job)
