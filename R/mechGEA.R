@@ -221,6 +221,10 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
                     stop_after_migration = FALSE,
                     par = parallel::detectCores() - 2){
 
+  if(!.check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
+
   # add a sanity check to check the inputs are blocked correctly!
   # could change a bit so the user can supply the results of step 2 (so if they are running lots of chunks don't need to re-run)
   # new name: mechGEA
@@ -534,6 +538,11 @@ estimate_migration <- function(migration_data,
                                max_treedepth_mig = 12,
                                refresh_mig = 200,
                                par = parallel::detectCores() - 2){
+
+  if(!.check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
+
   tictoc::tic("migration estimation")
 
 
@@ -706,6 +715,9 @@ run_stan_GEA_model <- function(stan_data,
                                iter_sampling_gea = 500,
                                seed = 42,
                                par = parallel::detectCores() - 2){
+  if(!.check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
 
   refresh <- refresh_gea; chains <- chains_gea; iter_warmup <- iter_warmup_gea
   iter_sampling <- iter_sampling_gea
@@ -830,6 +842,9 @@ run_stan_GEA_model <- function(stan_data,
 #' @export
 #' @describeIn mechGEA Estimate effective sample sizes for data for \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 estimate_neff <- function(stan_data){
+  if(!.check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
   tictoc::tic("estimating Neff time")
 
   ## ---- Load -----------------------------------------------------------------
@@ -942,6 +957,10 @@ estimate_neff <- function(stan_data){
 #' @export
 #' @describeIn mechGEA Calculate parameter summaries from a \code{\link{run_stan_GEA_model}}. Consider running with \code{\link{mechGEA}} for the full pipeline.
 beta_summary <- function(beta_draw, nloci, nenv){
+  if(!.check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
+
   beta_summary <- summarise_draws_parallel(beta_draw)
   saveRDS(beta_summary, "files/4_beta_summary.RDS")
 

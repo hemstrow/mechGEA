@@ -33,6 +33,7 @@ Imports:
     methods,
     parallel,
     posterior,
+    reticulate,
     rnaturalearth,
     rstan,
     sf,
@@ -41,7 +42,6 @@ Imports:
     tictoc
 Suggests:
     R.utils,
-    reticulate,
     rnaturalearthdata,
     rnaturalearthhires,
     testthat (>= 3.0.0),
