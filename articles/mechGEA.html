@@ -65,6 +65,17 @@
 association (GEA) pipeline for identifying loci involved in local
 adaptation, designed to work directly with low-coverage sequencing
 data.</p>
+<p>This vignette walks through a complete analysis of the bundled
+example data set (200 individuals in 20 patches, 1,500 loci, 5
+environmental variables). The pipeline has three steps, which are
+<em>automatically run by the </em> <code><a href="../reference/mechGEA.html">mechGEA()</a></code> <em>wrapper
+function</em>:</p>
+<ol style="list-style-type: decimal">
+<li>Preparing genotype likelihoods and patch metadata</li>
+<li>Estimating migration between patches</li>
+<li>Fit the GEA model</li>
+<li>Summarize and plot results</li>
+</ol>
 <div class="section level3">
 <h3 id="why-a-mechanistic-gea">Why a mechanistic GEA?<a class="anchor" aria-label="anchor" href="#why-a-mechanistic-gea"></a>
 </h3>
@@ -190,35 +201,6 @@ estimated, including low-coverage whole-genome sequencing and
 reduced-representation (e.g. RADseq) data. Likelihoods in BEAGLE format
 (e.g. from ANGSD) can be converted with <code><a href="../reference/beagle2pl.html">beagle2pl()</a></code>.</p>
 </div>
-<div class="section level3">
-<h3 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
-</h3>
-<p>If you use mechGEA, please also cite:</p>
-<blockquote>
-<p>Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. &amp;
-Hooten, M.B. (2025). Identifying genomic adaptation to local climate
-using a mechanistic evolutionary model. <em>Methods in Ecology and
-Evolution</em>, 16(10), 2448–2460. <a href="https://doi.org/10.1111/2041-210X.70117" class="external-link uri">https://doi.org/10.1111/2041-210X.70117</a></p>
-</blockquote>
-<blockquote>
-<p>Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton,
-P.E., Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. &amp;
-Hooten, M.B. (2026). Identifying adaptive variation in spatially
-structured populations using low-coverage whole-genome sequencing data.
-<em>Molecular Biology and Evolution</em>, 43(10), msag255. <a href="https://doi.org/10.1093/molbev/msag255" class="external-link uri">https://doi.org/10.1093/molbev/msag255</a></p>
-</blockquote>
-<p>This vignette walks through a complete analysis of the bundled
-example data set (200 individuals in 20 patches, 1,500 loci, 5
-environmental variables). The pipeline has three steps, which are
-<em>automatically run by the </em> <code><a href="../reference/mechGEA.html">mechGEA()</a></code> <em>wrapper
-function</em>:</p>
-<ol style="list-style-type: decimal">
-<li>Preparing genotype likelihoods and patch metadata</li>
-<li>Estimating migration between patches</li>
-<li>Fit the GEA model</li>
-<li>Summarise and plot results</li>
-</ol>
-</div>
 </div>
 <div class="section level2">
 <h2 id="quick-start-guide">Quick-start Guide<a class="anchor" aria-label="anchor" href="#quick-start-guide"></a>
@@ -247,10 +229,9 @@ individually.</p>
 <span><span class="co">#&gt; Please report any issues to the github issues page (https://github.com/hemstrow/mechGEA/issues)!</span></span>
 <span><span class="co">#&gt; Check out the NEWS page on github for update notes (https://github.com/hemstrow/mechGEA/blob/dev/NEWS.md)</span></span>
 <span><span class="co">#&gt; ================================================================================</span></span></code></pre></div>
-</div>
-<div class="section level2">
-<h2 id="data-import">Data import<a class="anchor" aria-label="anchor" href="#data-import"></a>
-</h2>
+<div class="section level3">
+<h3 id="data-import">Data import<a class="anchor" aria-label="anchor" href="#data-import"></a>
+</h3>
 <p>mechGEA needs four inputs:</p>
 <table class="table">
 <colgroup>
@@ -302,10 +283,10 @@ rows</strong>. Patches must in <code>patches_xy</code> and
 <span><span class="co">#&gt;  $ patch_info :'data.frame': 200 obs. of  2 variables:</span></span>
 <span><span class="co">#&gt;  $ patches_xy :'data.frame': 20 obs. of  3 variables:</span></span>
 <span><span class="co">#&gt;  $ env        :'data.frame': 20 obs. of  6 variables:</span></span></code></pre></div>
-<div class="section level3">
-<h3 id="generating-correctly-formatted-metadata-from-an-sf-object-">Generating correctly formatted metadata from an <code>sf</code>
+<div class="section level4">
+<h4 id="generating-correctly-formatted-metadata-from-an-sf-object-">Generating correctly formatted metadata from an <code>sf</code>
 object.<a class="anchor" aria-label="anchor" href="#generating-correctly-formatted-metadata-from-an-sf-object-"></a>
-</h3>
+</h4>
 <p>If your sample metadata is stored per individual in an
 <code>sf</code> object with one row per individual and environmental
 values attached, as in the <code>sample_metadata</code> example data,
@@ -343,6 +324,7 @@ variables correlated with the highest number of other variables.
 <p>The resulting, correctly formatted data should be essentially
 identical to that in the <code>example_gl</code> data set, albeit
 without genotypes.</p>
+</div>
 <div class="section level4">
 <h4 id="patch-metadata-details">Patch metadata details:<a class="anchor" aria-label="anchor" href="#patch-metadata-details"></a>
 </h4>
@@ -1017,6 +999,24 @@ used to combine plot results across runs.</p>
 <span>             <span class="st">"path/to/partion_n/input.beagle.gz"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_manhattan.html">plot_manhattan</a></span><span class="op">(</span><span class="va">results</span>, <span class="va">chunks</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h3>
+<p>If you use mechGEA, please also cite:</p>
+<blockquote>
+<p>Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. &amp;
+Hooten, M.B. (2025). Identifying genomic adaptation to local climate
+using a mechanistic evolutionary model. <em>Methods in Ecology and
+Evolution</em>, 16(10), 2448–2460. <a href="https://doi.org/10.1111/2041-210X.70117" class="external-link uri">https://doi.org/10.1111/2041-210X.70117</a></p>
+</blockquote>
+<blockquote>
+<p>Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton,
+P.E., Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. &amp;
+Hooten, M.B. (2026). Identifying adaptive variation in spatially
+structured populations using low-coverage whole-genome sequencing data.
+<em>Molecular Biology and Evolution</em>, 43(10), msag255. <a href="https://doi.org/10.1093/molbev/msag255" class="external-link uri">https://doi.org/10.1093/molbev/msag255</a></p>
+</blockquote>
 </div>
 <div class="section level3">
 <h3 id="runtime">Runtime<a class="anchor" aria-label="anchor" href="#runtime"></a>

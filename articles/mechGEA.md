@@ -6,6 +6,18 @@
 pipeline for identifying loci involved in local adaptation, designed to
 work directly with low-coverage sequencing data.
 
+This vignette walks through a complete analysis of the bundled example
+data set (200 individuals in 20 patches, 1,500 loci, 5 environmental
+variables). The pipeline has three steps, which are *automatically run
+by the*
+[`mechGEA()`](https://hemstrow.github.io/mechGEA/reference/mechGEA.md)
+*wrapper function*:
+
+1.  Preparing genotype likelihoods and patch metadata
+2.  Estimating migration between patches
+3.  Fit the GEA model
+4.  Summarize and plot results
+
 ### Why a mechanistic GEA?
 
 Most GEA methods have two limitations:
@@ -140,35 +152,6 @@ reduced-representation (e.g. RADseq) data. Likelihoods in BEAGLE format
 (e.g. from ANGSD) can be converted with
 [`beagle2pl()`](https://hemstrow.github.io/mechGEA/reference/beagle2pl.md).
 
-### Citation
-
-If you use mechGEA, please also cite:
-
-> Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. &
-> Hooten, M.B. (2025). Identifying genomic adaptation to local climate
-> using a mechanistic evolutionary model. *Methods in Ecology and
-> Evolution*, 16(10), 2448–2460.
-> <https://doi.org/10.1111/2041-210X.70117>
-
-> Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton,
-> P.E., Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. &
-> Hooten, M.B. (2026). Identifying adaptive variation in spatially
-> structured populations using low-coverage whole-genome sequencing
-> data. *Molecular Biology and Evolution*, 43(10), msag255.
-> <https://doi.org/10.1093/molbev/msag255>
-
-This vignette walks through a complete analysis of the bundled example
-data set (200 individuals in 20 patches, 1,500 loci, 5 environmental
-variables). The pipeline has three steps, which are *automatically run
-by the*
-[`mechGEA()`](https://hemstrow.github.io/mechGEA/reference/mechGEA.md)
-*wrapper function*:
-
-1.  Preparing genotype likelihoods and patch metadata
-2.  Estimating migration between patches
-3.  Fit the GEA model
-4.  Summarise and plot results
-
 ## Quick-start Guide
 
 Here, we will walk through a basic analysis of the example data included
@@ -199,7 +182,7 @@ library(mechGEA)
 #> ================================================================================
 ```
 
-## Data import
+### Data import
 
 mechGEA needs four inputs:
 
@@ -229,7 +212,7 @@ str(example_gl, max.level = 1)
 #>  $ env        :'data.frame': 20 obs. of  6 variables:
 ```
 
-### Generating correctly formatted metadata from an `sf` object.
+#### Generating correctly formatted metadata from an `sf` object.
 
 If your sample metadata is stored per individual in an `sf` object with
 one row per individual and environmental values attached, as in the
@@ -878,6 +861,23 @@ chunks <- c("path/to/partion_1/input.beagle.gz",
 
 plot_manhattan(results, chunks)
 ```
+
+### Citation
+
+If you use mechGEA, please also cite:
+
+> Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. &
+> Hooten, M.B. (2025). Identifying genomic adaptation to local climate
+> using a mechanistic evolutionary model. *Methods in Ecology and
+> Evolution*, 16(10), 2448–2460.
+> <https://doi.org/10.1111/2041-210X.70117>
+
+> Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton,
+> P.E., Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. &
+> Hooten, M.B. (2026). Identifying adaptive variation in spatially
+> structured populations using low-coverage whole-genome sequencing
+> data. *Molecular Biology and Evolution*, 43(10), msag255.
+> <https://doi.org/10.1093/molbev/msag255>
 
 ### Runtime
 

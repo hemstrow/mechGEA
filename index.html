@@ -50,100 +50,330 @@
 </h1></div>
 <!-- badges: start -->
 <!-- badges: end -->
-<p>The current version of this readme is for the developers, describing the overall scheme by which the package is set up. A typical user will do the following to run mechGEA:</p>
+</div>
+<div class="section level1">
+<h1 id="background">Background<a class="anchor" aria-label="anchor" href="#background"></a>
+</h1>
+<p><strong>mechGEA</strong> is a mechanistic genotype–environment association (GEA) pipeline for identifying loci involved in local adaptation, designed to work directly with low-coverage sequencing data.</p>
+<div class="section level2">
+<h2 id="why-a-mechanistic-gea">Why a mechanistic GEA?<a class="anchor" aria-label="anchor" href="#why-a-mechanistic-gea"></a>
+</h2>
+<p>Most GEA methods have two limitations:</p>
 <ol style="list-style-type: decimal">
-<li>Run the <code><a href="reference/get_chunks.html">get_chunks()</a></code> function to determine chunks of the input beagle file to run.</li>
-<li>Run the <code><a href="reference/prepare_metadata.html">prepare_metadata()</a></code> function to either save their metadata in the correct locations or reformat a raw input metadata and paths to environmental rasters appropriately.</li>
-<li>Optionally fetch and re-code the script provided by <code>example_array_script()</code> to make a script which will run all chunks on a cluster.</li>
-<li>Run the pipeline for each chunk either by hand or ideally with a scheduler script using the <code>mechGEA</code> function.</li>
+<li>
+<strong>They ignore uncertainty in genotyping and cannot have missing data.</strong> Allele frequencies are estimated from a finite, often incomplete sample of genotypes, and with low-coverage data the genotypes themselves are uncertain. Treating these estimates as known can bias downstream inference. Similarly, they typically also do not allow missing data, requiring imputation or a similar approach prior to use.</li>
+<li>
+<strong>They are phenomenological.</strong> Regression-based approaches (e.g. GLMs) assume a particular shape for the relationship between environment and allele frequency, but are only loosely connected to evolutionary theory.</li>
+</ol>
+<p>mechGEA instead builds the analysis on an explicit model of evolution and incorporates uncertainty into the model directly via data model.</p>
+</div>
+</div>
+<div class="section level1">
+<h1 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h1>
+<p>mechGEA fits models with Stan via <code>cmdstanr</code> and <code>rstan</code>. Installing these dependencies manually can be difficult, in part because they must be installed in a particular order under different C++ compiler versions. The usual installation tools (<code>install.packages</code> or the <code>remotes</code> and <code>pak</code> packages) cannot handle this on their own; installing with these tools alone will only produce a partial-install.</p>
+<p>We therefore <strong>strongly recommend installing mechGEA into a dedicated conda environment</strong> using a two-step process via the function <code><a href="reference/setup_mechGEA_env.html">setup_mechGEA_env()</a></code> included in mechGEA.</p>
+<blockquote>
+<p>mechGEA is currently tested and maintained for <strong>Linux</strong> only. Support for Windows and macOS is limited.</p>
+</blockquote>
+<p><strong>1. Initial install of mechGEA</strong> from GitHub, using <code>remotes</code> or <code>pak</code>:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span> <span class="co"># skip if already installed!</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"hemstrow/mechGEA"</span><span class="op">)</span></span></code></pre></div>
+<p>This will install the package, but the core functions will be turned off unless mechGEA detects a complete install.</p>
+<p><strong>2. Build the complete environment</strong> with <code><a href="reference/setup_mechGEA_env.html">setup_mechGEA_env()</a></code>:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">mechGEA</span><span class="fu">::</span><span class="fu"><a href="reference/setup_mechGEA_env.html">setup_mechGEA_env</a></span><span class="op">(</span><span class="op">)</span> <span class="co"># creates a conda environment called "mechGEA"</span></span></code></pre></div>
+<p>This builds a self-contained conda environment (using the <code>reticulate</code> package) with everything mechGEA needs: R, C/C++/Fortran compilers, CmdStan, <code>cmdstanr</code>, <code>rstan</code>, <code>sf</code>, <code>terra</code>, all other dependencies, and mechGEA itself. No system libraries or administrator rights are required. - If conda is not found, Miniconda is installed automatically. To use an existing conda installation (other than the default), provide a path to the conda executable: <code>setup_mechGEA_env(conda_path = "/path/to/conda")</code>. - Use <code>name</code> to choose a different environment name. The function stops if an environment with that name already exists. - Setup compiles several packages and can take a long time. At the end, check that the printed CmdStan path points inside the conda environment.</p>
+<p><strong>3. Activate the environment</strong> in bash to run analyses, then either run an R script or start up an R session:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="ex">conda</span> activate mechGEA</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="ex">Rscript</span> path/to/my_analysis.R</span></code></pre></div>
+</div>
+<div class="section level1">
+<h1 id="quick-start-guide">Quick-start Guide<a class="anchor" aria-label="anchor" href="#quick-start-guide"></a>
+</h1>
+<p>Here, we will walk through a basic analysis of the example data included in this package (<code>example_gl</code> and <code>sample_metadata</code>): 200 individuals sampled across 20 patches, genotyped at 1,500 loci, with five environmental variables. We will look at the input formats, prepare patch metadata, estimate migration among patches, fit the mechanistic GEA model, and summarise and plot the results. We first run the full pipeline with a single call to <code><a href="reference/mechGEA.html">mechGEA()</a></code>, then step through each stage individually.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://hemstrow.github.io/mechGEA/">mechGEA</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loading required package: data.table</span></span>
+<span><span class="co">#&gt; Warning: package 'data.table' was built under R version 4.5.3</span></span>
+<span><span class="co">#&gt; mechGEA version: 0.0.0.9000 loaded.</span></span>
+<span><span class="co">#&gt; ================================================================================</span></span>
+<span><span class="co">#&gt; This is a development build of mechGEA.</span></span>
+<span><span class="co">#&gt; While this version is passing all tests, there may still be bugs present.</span></span>
+<span><span class="co">#&gt; Please report any issues to the github issues page (https://github.com/hemstrow/mechGEA/issues)!</span></span>
+<span><span class="co">#&gt; Check out the NEWS page on github for update notes (https://github.com/hemstrow/mechGEA/blob/dev/NEWS.md)</span></span>
+<span><span class="co">#&gt; ================================================================================</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="data-import">Data import<a class="anchor" aria-label="anchor" href="#data-import"></a>
+</h2>
+<p>mechGEA needs four inputs:</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>Input</th>
+<th>Description</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>Phred</code></td>
+<td>Phred-scaled genotype likelihoods, one row per locus and one column per individual; genotypes comma separated with missing data marked “.”</td>
+</tr>
+<tr>
+<td><code>patch_info</code></td>
+<td>Patch identification for each individual</td>
+</tr>
+<tr>
+<td><code>patches_xy</code></td>
+<td>Coordinates of each patch</td>
+</tr>
+<tr>
+<td><code>env</code></td>
+<td>Z-scaled (mean 0, sd 1), uncorrelated environmental variables for each patch</td>
+</tr>
+</tbody>
+</table>
+<p>For the example data, all four are stored in the <code>example_gl</code> list:</p>
+<blockquote>
+<p><strong>Important:</strong> Individuals in <code>sample_metadata</code> must be in the <strong>same order</strong> as the columns (individuals) of the genotype likelihoods, and all individuals from the same patch must be in <strong>consecutive rows</strong>. Patches must in <code>patches_xy</code> and <code>env</code> must also be sorted by order-of-appearance in <code>patch_info</code>.</p>
+</blockquote>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">example_gl</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 4</span></span>
+<span><span class="co">#&gt;  $ likelihoods: chr [1:1500, 1:200] "46,6,0" "138,18,0" "." "69,9,0" ...</span></span>
+<span><span class="co">#&gt;   ..- attr(*, "dimnames")=List of 2</span></span>
+<span><span class="co">#&gt;  $ patch_info :'data.frame': 200 obs. of  2 variables:</span></span>
+<span><span class="co">#&gt;  $ patches_xy :'data.frame': 20 obs. of  3 variables:</span></span>
+<span><span class="co">#&gt;  $ env        :'data.frame': 20 obs. of  6 variables:</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="generating-correctly-formatted-metadata-from-an-sf-object">Generating correctly formatted metadata from an <code>sf</code> object.<a class="anchor" aria-label="anchor" href="#generating-correctly-formatted-metadata-from-an-sf-object"></a>
+</h3>
+<p>If your sample metadata is stored per individual in an <code>sf</code> object with one row per individual and environmental values attached, as in the <code>sample_metadata</code> example data, the<code><a href="reference/prepare_metadata.html">prepare_metadata()</a></code> function can be used to convert it into <code>patch_info</code>, <code>patches_xy</code>, and <code>env</code> objects:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">sample_metadata</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      patch  ind_id        env1      env2       env3     env4     env5</span></span>
+<span><span class="co">#&gt; 1 patch_01 ind_001 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt; 2 patch_01 ind_002 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt; 3 patch_01 ind_003 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt; 4 patch_01 ind_004 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt; 5 patch_01 ind_005 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt; 6 patch_01 ind_006 -0.03212425 0.2021607 -0.6491746 1.558552 1.141542</span></span>
+<span><span class="co">#&gt;               geometry</span></span>
+<span><span class="co">#&gt; 1 -105.65012, 46.04031</span></span>
+<span><span class="co">#&gt; 2 -105.65012, 46.04031</span></span>
+<span><span class="co">#&gt; 3 -105.65012, 46.04031</span></span>
+<span><span class="co">#&gt; 4 -105.65012, 46.04031</span></span>
+<span><span class="co">#&gt; 5 -105.65012, 46.04031</span></span>
+<span><span class="co">#&gt; 6 -105.65012, 46.04031</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">meta</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prepare_metadata.html">prepare_metadata</a></span><span class="op">(</span><span class="va">sample_metadata</span><span class="op">)</span></span></code></pre></div>
+<p>It is important to note that the GEA model assumes environmental variables are uncorrelated and Z-scaled. The <code><a href="reference/prune_envs.html">prune_envs()</a></code> function can be used to prune highly correlated environmental variables according to a correlation threshold by sequentially removing the variables correlated with the highest number of other variables. <code><a href="reference/prune_envs.html">prune_envs()</a></code> also Z-scales data.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># removes one env from any pair with a correlation coefficient above 0.7</span></span>
+<span><span class="co"># (or below -0.7).</span></span>
+<span><span class="va">meta</span><span class="op">$</span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/prune_envs.html">prune_envs</a></span><span class="op">(</span><span class="va">meta</span><span class="op">$</span><span class="va">env</span>, r2 <span class="op">=</span> <span class="fl">0.7</span><span class="op">)</span></span></code></pre></div>
+<p>The resulting, correctly formatted data should be essentially identical to that in the <code>example_gl</code> data set, albeit without genotypes.</p>
+</div>
+<div class="section level3">
+<h3 id="patch-metadata-details">Patch metadata details:<a class="anchor" aria-label="anchor" href="#patch-metadata-details"></a>
+</h3>
+<p><code>patch_info</code> is a two-column data.frame with columns <code>ind_id</code> and <code>patch</code>. Its rows must be in the same order as the columns of <code>Phred</code>, and <strong>individuals must be sorted in blocks by patch</strong>: all individuals from one patch must be in a block (sorted next to each other).</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">patch_info</span><span class="op">)</span></span>
+<span><span class="co">#&gt;    ind_id    patch</span></span>
+<span><span class="co">#&gt; 1 ind_001 patch_01</span></span>
+<span><span class="co">#&gt; 2 ind_002 patch_01</span></span>
+<span><span class="co">#&gt; 3 ind_003 patch_01</span></span>
+<span><span class="co">#&gt; 4 ind_004 patch_01</span></span>
+<span><span class="co">#&gt; 5 ind_005 patch_01</span></span>
+<span><span class="co">#&gt; 6 ind_006 patch_01</span></span></code></pre></div>
+<p><code>patches_xy</code> gives coordinates for each patch, with columns <code>patch</code>, <code>lat</code> and <code>lon</code>. <code>env</code> has a <code>patch</code> column followed by one column per environmental variable, each Z-scaled (mean = 0, sd = 1). Lat/lon coordinates are recommended to be in “WGS 84 (EPSG:4326)” coordinate reference for automatic plotting, but this is not required. Both must list patches in the same order in which patches first appear in <code>patch_info</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">patches_xy</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      patch      lat       lon</span></span>
+<span><span class="co">#&gt; 1 patch_01 46.04031 -105.6501</span></span>
+<span><span class="co">#&gt; 2 patch_02 38.38710 -105.3495</span></span>
+<span><span class="co">#&gt; 3 patch_03 46.88892 -114.1371</span></span>
+<span><span class="co">#&gt; 4 patch_04 46.46668 -106.7890</span></span>
+<span><span class="co">#&gt; 5 patch_05 37.82438 -109.3364</span></span>
+<span><span class="co">#&gt; 6 patch_06 42.14212 -110.9922</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">env</span><span class="op">)</span></span>
+<span><span class="co">#&gt;      patch        env1       env2        env3         env4        env5</span></span>
+<span><span class="co">#&gt; 1 patch_01 -0.03212425  0.2021607 -0.64917455  1.558552048  1.14154181</span></span>
+<span><span class="co">#&gt; 2 patch_02 -1.36106996 -0.3518810  0.03029178  0.191683584  0.99113613</span></span>
+<span><span class="co">#&gt; 3 patch_03  0.08928409  0.7416528  0.51805408  0.007063579 -0.98067315</span></span>
+<span><span class="co">#&gt; 4 patch_04  1.33885570 -0.7091368  1.52398967 -0.220972056  1.76498136</span></span>
+<span><span class="co">#&gt; 5 patch_05  1.95212686 -1.3359885 -1.09200225 -1.390288050 -0.65674777</span></span>
+<span><span class="co">#&gt; 6 patch_06 -0.14371808  0.4237745  1.40445240  0.577386601  0.08682305</span></span></code></pre></div>
+<p>A quick sanity check before running anything:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">patch_order</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">patch_info</span><span class="op">$</span><span class="va">patch</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">patch_order</span>, <span class="va">example_gl</span><span class="op">$</span><span class="va">patches_xy</span><span class="op">$</span><span class="va">patch</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">patch_order</span>, <span class="va">example_gl</span><span class="op">$</span><span class="va">env</span><span class="op">$</span><span class="va">patch</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">likelihoods</span><span class="op">)</span>, <span class="va">example_gl</span><span class="op">$</span><span class="va">patch_info</span><span class="op">$</span><span class="va">ind_id</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>All three should be <code>TRUE</code>. Note that these checks are also run automatically.</p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="genotype-likelihoods">Genotype likelihoods<a class="anchor" aria-label="anchor" href="#genotype-likelihoods"></a>
+</h2>
+<p>Rather than called genotypes, mechGEA uses genotype likelihoods, so uncertainty from low read depth is carried through the model. Each cell holds three comma-separated Phred-scaled likelihoods for the three possible genotypes (homozygous reference, heterozygote, homozygous alternate). Phred-scaling follows the equation: with the lowest Phred-scaled genotype (the most likely genotype) assigned a zero and everything else scaled to that value.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">example_gl</span><span class="op">$</span><span class="va">likelihoods</span><span class="op">)</span>          <span class="co"># loci x individuals</span></span>
+<span><span class="co">#&gt; [1] 1500  200</span></span>
+<span><span class="va">example_gl</span><span class="op">$</span><span class="va">likelihoods</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
+<span><span class="co">#&gt;            ind_001    ind_002    ind_003    ind_004   ind_005   </span></span>
+<span><span class="co">#&gt; locus_0001 "46,6,0"   "0,9,69"   "115,15,0" "8,0,77"  "0,9,69"  </span></span>
+<span><span class="co">#&gt; locus_0002 "138,18,0" "14,0,37"  "14,0,37"  "46,6,0"  "46,6,0"  </span></span>
+<span><span class="co">#&gt; locus_0003 "."        "161,21,0" "161,21,0" "37,0,14" "31,0,54" </span></span>
+<span><span class="co">#&gt; locus_0004 "69,9,0"   "138,18,0" "138,18,0" "2,0,117" "46,6,0"  </span></span>
+<span><span class="co">#&gt; locus_0005 "54,0,31"  "92,12,0"  "0,18,138" "92,12,0" "184,24,0"</span></span></code></pre></div>
+<p>Genotype likelihoods in BEAGLE format (for example, <code>.beagle.gz</code> output from ANGSD) can be converted to this format with <code><a href="reference/beagle2pl.html">beagle2pl()</a></code>. Each cell holds three Phred-scaled genotype likelihoods (AA, AB, BB), (again, rescaled so the most likely genotype is 0). Correspondingly, a phred-likelihood of 10 means that genotype is 10× less likely than the likelihood with a score of 0. “.” marks missing data.</p>
+<p>An example BEAGLE file is included with the package:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bfile</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example.beagle.gz"</span>, package <span class="op">=</span> <span class="st">"mechGEA"</span><span class="op">)</span></span>
+<span><span class="va">Phred</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/beagle2pl.html">beagle2pl</a></span><span class="op">(</span><span class="va">bfile</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">Phred</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 1500  200</span></span></code></pre></div>
+<p><code><a href="reference/beagle2pl.html">beagle2pl()</a></code> does not keep sample names from the beagle file by default (since many programs, like ANGSD, name individuals “Ind0” through “Ind(n-1)”). The <code><a href="reference/beagle2pl.html">beagle2pl()</a></code> function allows for sample names to be provided via the <code>ind_names</code> argument.</p>
+<p><strong>Note: this assumes <code>sample_metadata</code> is in the same order as the BAM list used to create the BEAGLE file.</strong> If it is not, provide <code>ind_names</code> in the BAM list order and use the <code>ind_order</code> argument to resort individuals on read-in. This can also be used to re-sort individuals which are not in blocks by patch.</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">Phred</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">sample_metadata</span><span class="op">$</span><span class="va">ind_id</span></span>
+<span><span class="va">Phred</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span></span>
+<span><span class="co">#&gt;      ind_001    ind_002    ind_003    ind_004   ind_005   </span></span>
+<span><span class="co">#&gt; [1,] "46,6,0"   "0,9,69"   "115,15,0" "8,0,77"  "0,9,69"  </span></span>
+<span><span class="co">#&gt; [2,] "138,18,0" "14,0,37"  "14,0,37"  "46,6,0"  "46,6,0"  </span></span>
+<span><span class="co">#&gt; [3,] "."        "161,21,0" "161,21,0" "37,0,14" "31,0,54" </span></span>
+<span><span class="co">#&gt; [4,] "69,9,0"   "138,18,0" "138,18,0" "2,0,117" "46,6,0"  </span></span>
+<span><span class="co">#&gt; [5,] "54,0,31"  "92,12,0"  "0,18,138" "92,12,0" "184,24,0"</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level1">
+<h1 id="running-the-full-pipeline">Running the full pipeline<a class="anchor" aria-label="anchor" href="#running-the-full-pipeline"></a>
+</h1>
+<p><code><a href="reference/mechGEA.html">mechGEA()</a></code> runs every step of the analysis in one call:</p>
+<ol style="list-style-type: decimal">
+<li>
+<strong>Data preparation</strong>: validates the inputs, converts Phred scores to log-likelihoods, and builds the data for both models.</li>
+<li>
+<strong>Migration estimation</strong>: fits the Bayesian migration model on a random subset of loci.</li>
+<li>
+<strong>GEA model fitting</strong>: fits the mechanistic GEA model to all loci, accounting for the estimated migration.</li>
+<li>
+<strong>Summaries and plots</strong>: identifies adaptive (locus, environment) pairs and plots the results.</li>
+<li>
+<strong>Effective sample size</strong>: estimates effective sample sizes for each locus/ environmental variable pair.</li>
+</ol>
+<p>Results are returned as a list and also written to <code>files/</code> and <code>plot/</code> in the <strong>current working directory</strong>, so run it in a dedicated folder.</p>
+<p>The settings below are deliberately small so that the example finishes quickly (about an hour on a 22-core server). They are <strong>not</strong> suitable for real analyses; use the defaults, or larger values, for those.</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span></span>
+<span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/mechGEA.html">mechGEA</a></span><span class="op">(</span>Phred      <span class="op">=</span> <span class="va">example_gl</span><span class="op">$</span><span class="va">likelihoods</span>,</span>
+<span>               patch_info <span class="op">=</span> <span class="va">example_gl</span><span class="op">$</span><span class="va">patch_info</span>,</span>
+<span>               patches_xy <span class="op">=</span> <span class="va">example_gl</span><span class="op">$</span><span class="va">patches_xy</span>,</span>
+<span>               env        <span class="op">=</span> <span class="va">example_gl</span><span class="op">$</span><span class="va">env</span>,</span>
+<span>               migration_loci    <span class="op">=</span> <span class="fl">1000</span>,   <span class="co"># loci used to estimate migration</span></span>
+<span>               N_sim_mig         <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>               chains_mig        <span class="op">=</span> <span class="fl">2</span>,</span>
+<span>               iter_warmup_mig   <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>               iter_sampling_mig <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>               iter_warmup_gea   <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>               iter_sampling_gea <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>               par <span class="op">=</span> <span class="fl">12</span><span class="op">)</span>                   <span class="co"># cores to use</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">res</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
+<p>Env/locus pair -log(e) p-values are located in <code>res$SNP_pvalues</code>. <code>res</code> also contains a suite of plots and other outputs. See the vignette for details.</p>
+</div>
+<div class="section level1">
+<h1 id="large-datasets">Large datasets<a class="anchor" aria-label="anchor" href="#large-datasets"></a>
+</h1>
+<p>Whole-genome data sets are usually too large to fit in a single model run. The recommended approach is to split the data into chunks of loci and run each chunk separately, ideally in parallel on a computing cluster.</p>
+<p>mechGEA has a few utilities to help with this:</p>
+<ol style="list-style-type: decimal">
+<li>
+<code><a href="reference/get_chunks.html">get_chunks()</a></code> splits a “.beagle” or “.beagle.gz” file into chunks containing n loci.</li>
+<li>
+<code>example_slurm_job</code> generates directories, data and metadata files, and a ready-to-run job script for SLURM clusters (which can be modified for other job-management engines). This script will run <code>mechGEA</code> on each BEAGLE chunk.</li>
 </ol>
 <div class="section level2">
-<h2 id="step-1-data-prep">Step 1: Data prep.<a class="anchor" aria-label="anchor" href="#step-1-data-prep"></a>
+<h2 id="splitting-data-into-chunks">Splitting data into chunks<a class="anchor" aria-label="anchor" href="#splitting-data-into-chunks"></a>
 </h2>
-<p>This package is fundamentally set-up to run on <em>chunks</em> of a larger beagle file but can be run on an entire file. Generally, the first thing a user will run is the <code><a href="reference/get_chunks.html">get_chunks()</a></code> function, which writes partitioned beagle files named <code>chunk_1.beagle.gz</code> etc.</p>
-<p>These are all that is needed from the genotype perspective to run the whole pipeline. The function <code><a href="reference/beagle2pl.html">beagle2pl()</a></code> can be called by the user, but is internally called by the pipeline to generate the pl formatted data.</p>
-<p>The pipeline also requires three metadata objects, which the user must prepare before running:</p>
-<div class="section level3">
-<h3 id="id_2-2_ind_patchesrds">2. <code>2_ind_patches.RDS</code>
-<a class="anchor" aria-label="anchor" href="#id_2-2_ind_patchesrds"></a>
-</h3>
-<p>A <strong>data frame or tibble</strong> with two columns: <code>ind_id</code> and <code>patch</code>.</p>
-<ul>
-<li>
-<code>ind_id</code>: character, unique identifier for each individual (matches column names of Phred matrix).</li>
-<li>
-<code>patch</code>: character, the name of the patch (population) the individual belongs to.</li>
-<li>Rows must be in <strong>block structure</strong>: all individuals from the same patch listed together, with patches appearing in the same order as in <code>3_patches_xy.RDS</code>.</li>
-</ul>
-<p>Example (6 individuals from 2 patches):</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>   ind_id                          patch</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="dv">1</span>  <span class="dv">17</span>N04031   Arapaho and Roosevelt NF</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="dv">2</span>  <span class="dv">17</span>N04032   Arapaho and Roosevelt NF</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="dv">3</span>  <span class="dv">17</span>N04033   Arapaho and Roosevelt NF</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="dv">4</span>  <span class="dv">18</span>N01223   Beartooth Plateau</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="dv">5</span>  <span class="dv">18</span>N01224   Beartooth Plateau</span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="dv">6</span>  <span class="dv">18</span>N01225   Beartooth Plateau</span></code></pre></div>
-<p>The sanity checks in <code>1_prepare_data.R</code> will verify: - Block structure (no interleaving of patches) - Patch order matches <code>3_patches_xy.RDS</code> - Number of individuals matches columns of Phred</p>
-<hr>
-</div>
-<div class="section level3">
-<h3 id="id_3-3_patches_xyrds">3. <code>3_patches_xy.RDS</code>
-<a class="anchor" aria-label="anchor" href="#id_3-3_patches_xyrds"></a>
-</h3>
-<p>A <strong>data frame or data.table</strong> with three columns: <code>patch</code>, <code>lat</code>, <code>lon</code>.</p>
-<ul>
-<li>
-<code>patch</code>: character, patch name (must match the <code>patch</code> values in <code>2_ind_patches.RDS</code> and <code>4_env.RDS</code>).</li>
-<li>
-<code>lat</code>: numeric, latitude in decimal degrees.</li>
-<li>
-<code>lon</code>: numeric, longitude in decimal degrees.</li>
-<li>One row per patch, in the same patch order that all other files follow.</li>
-</ul>
-<p>Example (4 patches):</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>                     patch      lat       lon</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="dv">1</span>  Arapaho and Roosevelt NF  <span class="fl">40.5000</span>  <span class="sc">-</span><span class="fl">105.5000</span></span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="dv">2</span>         Beartooth Plateau  <span class="fl">45.0000</span>  <span class="sc">-</span><span class="fl">109.5000</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="dv">3</span>           Dalton Highway   <span class="fl">68.0000</span>  <span class="sc">-</span><span class="fl">149.5000</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="dv">4</span>          Devils Causeway   <span class="fl">40.0833</span>  <span class="sc">-</span><span class="fl">107.2167</span></span></code></pre></div>
-<hr>
-</div>
-<div class="section level3">
-<h3 id="id_4-4_envrds">4. <code>4_env.RDS</code>
-<a class="anchor" aria-label="anchor" href="#id_4-4_envrds"></a>
-</h3>
-<p>A <strong>data frame or tibble</strong> with the first column named <code>patch</code> followed by one column per environmental variable.</p>
-<ul>
-<li>
-<code>patch</code>: character, patch name (same values and same order as <code>3_patches_xy.RDS</code>).</li>
-<li>Remaining columns: numeric environmental variables, one per column. <strong>Standardise</strong> (z-score) each environmental variable before saving.</li>
-<li>Column names become the environmental variable labels in all output plots.</li>
-</ul>
-<p>Example (4 patches, 3 env variables):</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode R"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>                     patch    Env1   Env2    Env3</span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="dv">1</span>  Arapaho and Roosevelt NF  <span class="sc">-</span><span class="fl">0.78</span>   <span class="fl">0.23</span>   <span class="sc">-</span><span class="fl">0.13</span></span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="dv">2</span>         Beartooth Plateau  <span class="sc">-</span><span class="fl">1.12</span>  <span class="sc">-</span><span class="fl">0.04</span>    <span class="fl">1.05</span></span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="dv">3</span>           Dalton Highway    <span class="fl">0.45</span>   <span class="fl">1.23</span>    <span class="fl">0.88</span></span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="dv">4</span>          Devils Causeway   <span class="sc">-</span><span class="fl">0.90</span>  <span class="sc">-</span><span class="fl">0.02</span>    <span class="fl">2.01</span></span></code></pre></div>
-<hr>
-<p>These can be generated by the user using the function <code><a href="reference/prepare_metadata.html">prepare_metadata()</a></code>, which takes either the pre-formatted data OR serves as a wrapper around internal <code>.format_meta()</code> which takes one meta data file with patch info and a vector of filepaths to environmental rasters. In the latter case, the input metadata must have sample IDs, patch IDs, and lat-long locations for each individual. The function will automatically take average locations and extract buffered average env conditions from each location, then purge them to an uncorrelated suite according to user preferences.</p>
-<p>This is all that is all that the user is required to do to prepare to run.</p>
-</div>
+<p><code><a href="reference/get_chunks.html">get_chunks()</a></code> splits a BEAGLE file into smaller BEAGLE files of <code>loci_per_chunk</code> loci each, reading the input in pieces so that the full file never has to be loaded into memory. e.g recommended 50k SNPs per chunk at max for whole genome dataset</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">bfile</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"example.beagle.gz"</span>, package <span class="op">=</span> <span class="st">"mechGEA"</span><span class="op">)</span></span>
+<span><span class="va">chunks</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_chunks.html">get_chunks</a></span><span class="op">(</span><span class="va">bfile</span>, </span>
+<span>                     loci_per_chunk <span class="op">=</span> <span class="fl">500</span>, <span class="co"># loci per chunk, use 50-100k for WGS</span></span>
+<span>                     outdir <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="co"># save files to pwd. Default uses beagle dir.</span></span>
+<span><span class="va">chunks</span></span>
+<span><span class="co">#&gt; [1] "chunk_0.beagle.gz" "chunk_1.beagle.gz" "chunk_2.beagle.gz"</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-2-running-the-pipeline">Step 2: Running the pipeline.<a class="anchor" aria-label="anchor" href="#step-2-running-the-pipeline"></a>
+<h2 id="running-on-a-slurm-cluster">Running on a SLURM cluster<a class="anchor" aria-label="anchor" href="#running-on-a-slurm-cluster"></a>
 </h2>
-<p>The user then runs the function <code><a href="reference/mechGEA.html">mechGEA()</a></code> to execute the pipeline. This function needs a selected snp list (like those made by <code><a href="reference/get_chunks.html">get_chunks()</a></code>) and a path to a directory containing the raw input data including the genotypes (the raw beagle genotypes, specified by name by the user OR a single PL object produced with the already subset and formatted loci) and the three metadata files described above. This runs the pipeline on <em>a single batch of loci</em>. It is up to the user to run all of the seperate batches, although an example slurm-array oriented shell script is provided and can be fetched using the <code>example_array_script()</code> function. Users with other schedulers will need to make their own, although we can put a suggestion to provide examples for inclusion in the documentation for the latter function.</p>
+<p><code><a href="reference/example_slurm_job.html">example_slurm_job()</a></code> generates a SLURM array job that runs <code><a href="reference/mechGEA.html">mechGEA()</a></code> on each BEAGLE file as a separate task:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sh</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/example_slurm_job.html">example_slurm_job</a></span><span class="op">(</span>beagle_files    <span class="op">=</span> <span class="va">chunks</span>,</span>
+<span>                        sample_metadata <span class="op">=</span> <span class="va">sample_metadata</span>,</span>
+<span>                        output_dir      <span class="op">=</span> <span class="st">"results"</span>,</span>
+<span>                        conda_env       <span class="op">=</span> <span class="st">"mechGEA"</span><span class="op">)</span></span>
+<span><span class="va">sh</span></span></code></pre></div>
+<p><code><a href="reference/example_slurm_job.html">example_slurm_job()</a></code> takes all of the arguments that <code>mechGEA</code> uses, as well as resource and env pruning arguments.</p>
+<p>This writes the following files to <code>./control/</code> (change this with <code>control_file_prefix</code>):</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr>
+<th>File</th>
+<th>Purpose</th>
+</tr></thead>
+<tbody>
+<tr>
+<td><code>example_slurm_array_job.sh</code></td>
+<td>SLURM array script, one task per BEAGLE file</td>
+</tr>
+<tr>
+<td><code>example_array_rscript.R</code></td>
+<td>R script run by each task</td>
+</tr>
+<tr>
+<td><code>beaglelist.txt</code></td>
+<td>list of BEAGLE files</td>
+</tr>
+<tr>
+<td><code>sample_metadata.RDS</code></td>
+<td>prepared metadata (<code>patch_info</code>, <code>patches_xy</code>, <code>env</code>)</td>
+</tr>
+<tr>
+<td><code>parmfile.RDS</code></td>
+<td>additional arguments passed to <code><a href="reference/mechGEA.html">mechGEA()</a></code>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Each task converts its BEAGLE file with <code><a href="reference/beagle2pl.html">beagle2pl()</a></code>, runs <code><a href="reference/mechGEA.html">mechGEA()</a></code> in its own sub-directory of <code>output_dir</code> (<code>partition_&lt;task&gt;_&lt;chunk name&gt;</code>), and writes its results there. The final outputs (e.g. the results of <code>res &lt;- mechGEA(...)</code>) will be saved as <code>final_results.RDS</code>.</p>
+<p>To run, edit the <code>example_slurm_array_job.sh</code> for your specific needs and execute.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="ex">sbatch</span> example_slurm_array_job.sh</span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>You can install the development version of mechGEA from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"hemstrow/mechGEA"</span><span class="op">)</span></span></code></pre></div>
+<p>If you use mechGEA, please also cite:</p>
+<blockquote>
+<p>Goel, N., Bossu, C.M., Van Ee, J.J., Zavaleta, E., Ruegg, K.C. &amp; Hooten, M.B. (2025). Identifying genomic adaptation to local climate using a mechanistic evolutionary model. <em>Methods in Ecology and Evolution</em>, 16(10), 2448–2460. <a href="https://doi.org/10.1111/2041-210X.70117" class="external-link uri">https://doi.org/10.1111/2041-210X.70117</a></p>
+</blockquote>
+<blockquote>
+<p>Goel, N., Bossu, C.M., Yi, S., Robertson, E.C., Brown, T.M., Bolton, P.E., Vernasco, B.J., Amirkhiz, R.G., Zavaleta, E., Ruegg, K.C. &amp; Hooten, M.B. (2026). Identifying adaptive variation in spatially structured populations using low-coverage whole-genome sequencing data. <em>Molecular Biology and Evolution</em>, 43(10), msag255. <a href="https://doi.org/10.1093/molbev/msag255" class="external-link uri">https://doi.org/10.1093/molbev/msag255</a></p>
+</blockquote>
 </div>
 </div>
+
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
