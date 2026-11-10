@@ -109,3 +109,34 @@ check_correct_install <- function(status = Sys.getenv("mechGEA_full_install")){
   }
 }
 
+# from snpR
+.check.installed <- function(pkg, install.type = "basic", source = NULL){
+  for(i in 1:length(pkg)){
+
+    tpkg <- pkg[i]
+
+    if(!tpkg %in% rownames(utils::installed.packages())){
+      say <- paste0("Package '", tpkg, "' not found.")
+      cat(say, "")
+      cat("Install? (y or n)\n")
+
+      if(!interactive()){
+        stop(say)
+      }
+
+      resp <- readLines(n = 1)
+      resp <- tolower(resp)
+
+
+      if(resp != "y"){
+        stop(say)
+      }
+      else{
+        utils::install.packages(tpkg)
+        return(TRUE)
+      }
+    }
+    else{return(TRUE)}
+  }
+}
+

@@ -5,6 +5,8 @@ plot_migration <- function(migration_results, migration_data, patches_xy,
                            mig_plot_topn = 2,
                            mig_plot_binsize = 1){
 
+  .check.installed(c("ggplot2", "rnaturalearth", "sf", "cowplot"))
+
   patch_from <- patch_to <- p1 <- p2 <- migration_rate <- lon_from <- lon_to <- lat_from <- lat_to <- NULL
   mid_lon <- mid_lat <- mid_lon_bin <-mid_lat_bin <- mig_rate <- lon <- lat <- Distance <- Migration <- NULL
 
@@ -181,6 +183,13 @@ plot_gea <- function(stan_data,
                      env_names,
                      CI = 0.95,
                      env_colors = NULL){
+
+  if(!check_correct_install()){
+    stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
+  }
+
+  .check.installed(c("ggplot2", "ggh4x", "grDevices", "LaplacesDemon"))
+
   Env_var <- Locus <- SNP <- . <- nlogp <- Env <- color <- migration_off <- migration_on <- NULL
   type <- value <- variable <- facet <- muk <- `No migration` <- NULL
   `Mean-field  (1st correction)` <- logit <- env_value <- p_logit <- patch <- NULL
@@ -666,6 +675,8 @@ plot_manhattan <- function(SNP_pvalues,
                            chr_order = NULL,
                            abbreviate_labels = FALSE,
                            env_colors = NULL){
+
+  .check.installed(c("ggplot2", "ggnewscale"))
 
   cum.bp <- cum.start <- cum.end <- y <- start <- end <- med <- POS <- IDfac <- SNP <-  NULL
   nlogp <- CHROM <- Env <- NULL

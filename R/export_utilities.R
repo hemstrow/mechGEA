@@ -97,7 +97,7 @@ example_slurm_job <- function(beagle_files,
                               setup_env_conda_path = "DEFAULT",
                               ...){
 
-  #NOTE: set the resources from arg too?
+  .check.installed("xfun")
 
 
   beagle_files <- normalizePath(beagle_files)

@@ -505,6 +505,7 @@ toc_hours <- function(tic, toc, msg) {
 }
 
 pal_picker <- function(n){
+  .check.installed("khroma")
   if(n <= 3){
     pal <- khroma::color("highcontrast")(n)
   } else if(n <= 7){

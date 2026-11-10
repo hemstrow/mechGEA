@@ -46,6 +46,8 @@
 #'
 beagle2pl <- function(file, lines = NULL, ind_order = NULL, ind_names = NULL){
 
+  .check.installed("matrixStats")
+
   if(!is.null(lines)){
     d <- data.table::fread(file, skip = lines[1] - 1, nrows = length(lines))
   }
@@ -121,6 +123,7 @@ get_chunks <- function(beagle_file,
                        loci_per_chunk = 10000,
                        max_read = 50000,
                        outdir = dirname(beagle_file)){
+  .check.installed("bread")
 
   #============sanity checks==========
   sys <- Sys.info()["sysname"]
@@ -269,6 +272,8 @@ prepare_metadata <- function(sample_meta,
                              env_mean_method = "unweighted",
                              idp = 1){
 
+  .check.installed("sf")
+
   patch <- ind_id <- lat <- lon <- ..targets <- . <- NULL
 
   # first things first--check the sorting and if it isn't OK. We don't want to re-sort,
@@ -319,6 +324,7 @@ prepare_metadata <- function(sample_meta,
     targets <- c("patch", targets)
     .fix..call(envs <- envs[,..targets])
   } else if(env_mean_method == "weighted"){ # for weighted (idw); relies on gstat
+    .check.installed("gstat")
     envs <- data.table::copy(patch_xy)[,1]
     for(i in targets) envs[[i]] <- 0
 

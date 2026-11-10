@@ -226,6 +226,9 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
     stop("mechGEA dependencies not correctly installed. See: `setup_mechGEA_env()`.\n")
   }
 
+  .check.installed(c("geodist", "ggplot2", "cowplot", "khroma", "rnaturalearth", "rnaturalearthdata", "rnaturalearthhires",
+                     "terra", "ggh4x", "LaplacesDemon", "sf"))
+
   # add a sanity check to check the inputs are blocked correctly!
   # could change a bit so the user can supply the results of step 2 (so if they are running lots of chunks don't need to re-run)
   # new name: mechGEA
@@ -338,6 +341,8 @@ mechGEA <- function(Phred, patch_info, patches_xy, env,
 #' @describeIn mechGEA Prepare migration data (and stan) data for modeling. Consider running with \code{\link{mechGEA}} for the full pipeline.
 prepare_mig_data <- function(Phred, patch_info, patches_xy, env, migration_loci,
                              N_sim_mig, seed = 42) {
+
+  .check.installed(c("geodist"))
 
 
   msg <- character()
