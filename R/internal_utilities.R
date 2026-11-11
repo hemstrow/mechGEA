@@ -133,10 +133,10 @@ check_correct_install <- function(status = Sys.getenv("mechGEA_full_install")){
       }
       else{
         utils::install.packages(tpkg)
-        return(TRUE)
       }
     }
-    else{return(TRUE)}
   }
+
+  return(TRUE)
 }
 
