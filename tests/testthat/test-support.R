@@ -126,7 +126,7 @@ test_that("slurm_example", {
   expect_error(slurm_script <- example_slurm_job(
     beagle_files = chunks,
     sample_metadata = sample_metadata, # the example metadata sf object
-    conda_env = "base",
+    conda_env = FALSE,
     control_file_prefix = "./control/",
     env_mean_method = "weighted", # unweighted env averages
     idp = 2,

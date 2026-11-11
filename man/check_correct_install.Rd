@@ -7,7 +7,7 @@
 check_correct_install(status = Sys.getenv("mechGEA_full_install"))
 }
 \arguments{
-\item{stats}{install status, fetched from a system environment (which should
+\item{status}{install status, fetched from a system environment (which should
 not be manually updated; this function will check and update the status as
 needed).}
 }

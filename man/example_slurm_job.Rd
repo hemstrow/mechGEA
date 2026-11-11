@@ -31,8 +31,7 @@ generated SLURM script for more effective parallelization.}
 \item{sample_metadata}{either a named list of data.frames containing the
 needed metadata in the correct format expected by \code{\link{mechGEA}}
 (see \code{\link{example_gl}}, although the \code{$likelihoods} object is
-not needed.) or an input \code{\link[sf:sf]{sf}} object like
-\code{\link{sample_metadata}}.}
+not needed.) or an input 'sf' object like \code{\link{sample_metadata}}.}
 
 \item{output_dir}{character, default ".". A path to the director where final
 \code{\link{mechGEA}} outputs will be stored in named sub-directories for
@@ -42,19 +41,22 @@ each file in \code{beagle_files}.}
 to load at the start of the script. Note that if a conda module etc. needs
 to be loaded for this env to load, the resulting SLURM array-job shell
 script must be modified. See \code{\link{setup_mechGEA_env}} for help
-setting up a working \code{conda} environment.}
+setting up a working \code{conda} environment. If \code{conda_env} is
+FALSE, no conda environment will be used.}
 
-\item{control_file_prefix}{character, default "./control/". A prefix indicating
-where the control files (including meta-data and the shell script) will be
-located. Either a directory ending in "/" or a file basename prefix.}
+\item{control_file_prefix}{character, default "./control/". A prefix
+indicating where the control files (including meta-data and the shell
+script) will be located. Either a directory ending in "/" or a file
+basename prefix.}
 
 \item{env_mean_method}{character, default "unweighted". Weighting scheme for
-mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
-See \code{\link{prepare_metadata}} for details and options.}
+mean envs if a \code{\link{sf}} object is provided to
+\code{sample_metadata}. See \code{\link{prepare_metadata}} for details and
+options.}
 
-\item{prune_r2}{numeric or FALSE, default 0.7. If numeric, the r2 by which
-to prune environmental variables to ensure all are uncorrelated. Scaling
-is always set to TRUE; to scale without pruning set prune_r2 to 1.}
+\item{prune_r2}{numeric or FALSE, default 0.7. If numeric, the r2 by which to
+prune environmental variables to ensure all are uncorrelated. Scaling is
+always set to TRUE; to scale without pruning set prune_r2 to 1.}
 
 \item{idp}{integer, default 1. Inverse-distance weighting provided if using
 weighted env means. See \code{\link{prepare_metadata}} for details and
