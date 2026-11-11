@@ -71,7 +71,7 @@ example_slurm_job(
 - env_mean_method:
 
   character, default "unweighted". Weighting scheme for mean envs if a
-  `sf` object is provided to `sample_metadata`. See
+  'sf' object is provided to `sample_metadata`. See
   [`prepare_metadata`](https://hemstrow.github.io/mechGEA/reference/prepare_metadata.md)
   for details and options.
 
