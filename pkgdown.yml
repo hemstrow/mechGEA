@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   mechGEA: mechGEA.html
-last_built: 2026-11-11T00:11Z
+last_built: 2026-11-11T00:54Z
 urls:
   reference: https://hemstrow.github.io/mechGEA/reference
   article: https://hemstrow.github.io/mechGEA/articles
