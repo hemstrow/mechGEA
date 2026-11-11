@@ -14,7 +14,7 @@ check_correct_install(status = Sys.getenv("mechGEA_full_install"))
 
 ## Arguments
 
-- stats:
+- status:
 
   install status, fetched from a system environment (which should not be
   manually updated; this function will check and update the status as

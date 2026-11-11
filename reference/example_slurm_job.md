@@ -41,8 +41,8 @@ example_slurm_job(
   [`mechGEA`](https://hemstrow.github.io/mechGEA/reference/mechGEA.md)
   (see
   [`example_gl`](https://hemstrow.github.io/mechGEA/reference/example_gl.md),
-  although the `$likelihoods` object is not needed.) or an input
-  [`sf`](https://r-spatial.github.io/sf/reference/sf.html) object like
+  although the `$likelihoods` object is not needed.) or an input 'sf'
+  object like
   [`sample_metadata`](https://hemstrow.github.io/mechGEA/reference/sample_metadata.md).
 
 - output_dir:
@@ -59,7 +59,8 @@ example_slurm_job(
   loaded for this env to load, the resulting SLURM array-job shell
   script must be modified. See
   [`setup_mechGEA_env`](https://hemstrow.github.io/mechGEA/reference/setup_mechGEA_env.md)
-  for help setting up a working `conda` environment.
+  for help setting up a working `conda` environment. If `conda_env` is
+  FALSE, no conda environment will be used.
 
 - control_file_prefix:
 
