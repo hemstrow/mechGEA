@@ -138,21 +138,6 @@ test_that("slurm_example", {
     migration_results = "BS_mig_NOT_REAL.RDS"
   ), "Could not find pre-existing migration results")
 
-  # try also with a bad conda env
-  expect_error(slurm_script <- example_slurm_job(
-    beagle_files = chunks,
-    sample_metadata = sample_metadata, # the example metadata sf object
-    conda_env = "DOES_NOT_EXIST",
-    control_file_prefix = "./control/",
-    env_mean_method = "weighted", # unweighted env averages
-    idp = 2,
-    output_dir = "./outputs/",
-    prune_r2 = 0.7, # prune envs
-    iter_sampling_mig = 100,
-    iter_warmup_mig = 50,
-    max_treedepth_mig = 12
-  ), "Conda environment: DOES_NOT_EXIST not found.")
-
   # cleanup
   file.remove(rfile)
   file.remove(metaf) # cleanup
@@ -173,6 +158,21 @@ test_that("slurm_example", {
   # first, chunk a beagle file
   beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
   chunks <- get_chunks(beagle, loci_per_chunk = 150, outdir = ".")
+
+  # try with a bad conda env
+  expect_error(slurm_script <- example_slurm_job(
+    beagle_files = chunks,
+    sample_metadata = sample_metadata, # the example metadata sf object
+    conda_env = "DOES_NOT_EXIST",
+    control_file_prefix = "./control/",
+    env_mean_method = "weighted", # unweighted env averages
+    idp = 2,
+    output_dir = "./outputs/",
+    prune_r2 = 0.7, # prune envs
+    iter_sampling_mig = 100,
+    iter_warmup_mig = 50,
+    max_treedepth_mig = 12
+  ), "Conda environment: DOES_NOT_EXIST not found.")
 
   # then, create the slurm job
   slurm_script <- example_slurm_job(

@@ -54,7 +54,7 @@ Additional_repositories:
     https://ropensci.r-universe.dev
 Depends:
     data.table,
-    R (>= 3.6.0)
+    R (>= 4.1.0)
 LazyData: true
 VignetteBuilder: knitr
 Config/testthat/edition: 3

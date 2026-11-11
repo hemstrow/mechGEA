@@ -50,7 +50,7 @@ script) will be located. Either a directory ending in "/" or a file
 basename prefix.}
 
 \item{env_mean_method}{character, default "unweighted". Weighting scheme for
-mean envs if a \code{\link{sf}} object is provided to
+mean envs if a 'sf' object is provided to
 \code{sample_metadata}. See \code{\link{prepare_metadata}} for details and
 options.}
 
