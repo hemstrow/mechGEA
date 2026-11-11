@@ -11,8 +11,7 @@
 #' @param sample_metadata either a named list of data.frames containing the
 #'   needed metadata in the correct format expected by \code{\link{mechGEA}}
 #'   (see \code{\link{example_gl}}, although the \code{$likelihoods} object is
-#'   not needed.) or an input \code{\link[sf:sf]{sf}} object like
-#'   \code{\link{sample_metadata}}.
+#'   not needed.) or an input 'sf' object like \code{\link{sample_metadata}}.
 #' @param output_dir character, default ".". A path to the director where final
 #'   \code{\link{mechGEA}} outputs will be stored in named sub-directories for
 #'   each file in \code{beagle_files}.
@@ -20,16 +19,19 @@
 #'   to load at the start of the script. Note that if a conda module etc. needs
 #'   to be loaded for this env to load, the resulting SLURM array-job shell
 #'   script must be modified. See \code{\link{setup_mechGEA_env}} for help
-#'   setting up a working \code{conda} environment.
-#' @param control_file_prefix character, default "./control/". A prefix indicating
-#'   where the control files (including meta-data and the shell script) will be
-#'   located. Either a directory ending in "/" or a file basename prefix.
+#'   setting up a working \code{conda} environment. If \code{conda_env} is
+#'   FALSE, no conda environment will be used.
+#' @param control_file_prefix character, default "./control/". A prefix
+#'   indicating where the control files (including meta-data and the shell
+#'   script) will be located. Either a directory ending in "/" or a file
+#'   basename prefix.
 #' @param env_mean_method character, default "unweighted". Weighting scheme for
-#'   mean envs if a \code{\link{sf}} object is provided to \code{sample_metadata}.
-#'   See \code{\link{prepare_metadata}} for details and options.
-#' @param prune_r2 numeric or FALSE, default 0.7. If numeric, the r2 by which
-#'   to prune environmental variables to ensure all are uncorrelated. Scaling
-#'   is always set to TRUE; to scale without pruning set prune_r2 to 1.
+#'   mean envs if a \code{\link{sf}} object is provided to
+#'   \code{sample_metadata}. See \code{\link{prepare_metadata}} for details and
+#'   options.
+#' @param prune_r2 numeric or FALSE, default 0.7. If numeric, the r2 by which to
+#'   prune environmental variables to ensure all are uncorrelated. Scaling is
+#'   always set to TRUE; to scale without pruning set prune_r2 to 1.
 #' @param idp integer, default 1. Inverse-distance weighting provided if using
 #'   weighted env means. See \code{\link{prepare_metadata}} for details and
 #'   options.
@@ -109,6 +111,10 @@ example_slurm_job <- function(beagle_files,
   dreamerr::check_value(setup_env, .type = "scalar logical")
 
   if(setup_env){
+    if(isFALSE(conda_env)){
+      stop("Cannot setup a conda environment if conda_env == FALSE.\n")
+    }
+
     # check that the conda_env doesn't already exist, ask if it should be replaced if it does.
     if(conda_env %in% reticulate::conda_list()$name){
       say <- paste0("Conda environment named: ", conda_env, " already created.")
@@ -131,8 +137,10 @@ example_slurm_job <- function(beagle_files,
       setup_mechGEA_env(conda_env, setup_env_conda_path)
     }
   } else{
-    if(!conda_env %in% reticulate::conda_list()$name){
-      stop(paste0("Conda environment: ", conda_env, " not found.\n"))
+    if(!isFALSE(conda_env)){
+      if(!conda_env %in% reticulate::conda_list()$name){
+        stop(paste0("Conda environment: ", conda_env, " not found.\n"))
+      }
     }
   }
 
@@ -224,13 +232,20 @@ example_slurm_job <- function(beagle_files,
   xfun::gsub_file(sh, "META_REPLACE", sample_metadata)
   xfun::gsub_file(sh, "PARAM_REPLACE", control_parmfile)
   xfun::gsub_file(sh, "DIR_REPLACE", output_dir)
-  xfun::gsub_file(sh, "ENV_REPLACE", conda_env)
   xfun::gsub_file(sh, "RSCRIPT_REPLACE", control_rscript)
   xfun::gsub_file(sh, "ARRAY_REPLACE", as.character(nfiles))
   xfun::gsub_file(sh, "MIG_RES_REPLACE", ifelse(!is.null(migration_results), migration_results, "FALSE"))
   xfun::gsub_file(sh, "TIME_REPLACE", job_time)
   xfun::gsub_file(sh, "CORES_REPLACE", cores)
   xfun::gsub_file(sh, "MEM_REPLACE", memory)
+
+  if(isFALSE(conda_env)){
+    shs <- readLines(sh)
+    shs <- shs[-grep("ENV_REPLACE", shs)]
+    writeLines(shs, sh)
+  } else {
+    xfun::gsub_file(sh, "ENV_REPLACE", conda_env)
+  }
 
   return(sh)
 }

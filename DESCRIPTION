@@ -36,6 +36,7 @@ Suggests:
     grDevices,
     gstat,
     khroma,
+    knitr,
     LaplacesDemon,
     posterior,
     R.utils,
@@ -43,6 +44,7 @@ Suggests:
     rnaturalearth,
     rnaturalearthdata,
     rnaturalearthhires,
+    rmarkdown,
     sf,
     terra,
     testthat (>= 3.0.0),
@@ -54,5 +56,6 @@ Depends:
     data.table,
     R (>= 3.6.0)
 LazyData: true
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 URL: https://hemstrow.github.io/mechGEA/

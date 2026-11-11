@@ -26,7 +26,7 @@
 #' installed. It runs automatically during the \code{\link{mechGEA}} pipeline,
 #' but can also be run manually. It only needs to be run once per session.
 #'
-#' @param stats install status, fetched from a system environment (which should
+#' @param status install status, fetched from a system environment (which should
 #'   not be manually updated; this function will check and update the status as
 #'   needed).
 #'

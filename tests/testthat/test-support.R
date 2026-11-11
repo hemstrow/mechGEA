@@ -8,7 +8,7 @@ test_that("slurm_example", {
   slurm_script <- example_slurm_job(
     beagle_files = chunks,
     sample_metadata = sample_metadata, # the example metadata sf object
-    conda_env = "base",
+    conda_env = FALSE,
     control_file_prefix = "./control/",
     env_mean_method = "weighted", # unweighted env averages
     idp = 2,
@@ -47,8 +47,8 @@ test_that("slurm_example", {
   dest_path <- inputs[grep("dir_prefix", inputs)]
   dest_path <- gsub("dir_prefix=", "", dest_path)
   expect_equal(normalizePath(dest_path), normalizePath("./outputs/"))
-  ## env
-  expect_equal(inputs[grep("env=", inputs)], "env=base")
+  ## no env
+  expect_equal(length(grep("env=", inputs)), 0)
   ## rscript
   rfile <- inputs[grep("execution_Rscript", inputs)]
   rfile <- gsub("execution_Rscript=", "", rfile)
@@ -101,7 +101,7 @@ test_that("slurm_example", {
   slurm_script <- example_slurm_job(
     beagle_files = chunks,
     sample_metadata = sample_metadata, # the example metadata sf object
-    conda_env = "base",
+    conda_env = FALSE,
     control_file_prefix = "./control/",
     env_mean_method = "weighted", # unweighted env averages
     idp = 2,
@@ -178,7 +178,7 @@ test_that("slurm_example", {
   slurm_script <- example_slurm_job(
     beagle_files = chunks,
     sample_metadata = sample_metadata, # the example metadata sf object
-    conda_env = "mechGEA",
+    conda_env = FALSE,
     control_file_prefix = "./control/",
     output_dir = "./outputs/",
     prune_r2 = 0.7, # prune envs
@@ -186,7 +186,8 @@ test_that("slurm_example", {
     iter_warmup_gea = 200,
     iter_sampling_mig = 100,
     iter_warmup_mig = 200,
-    migration_loci = 100
+    migration_loci = 100,
+    setup_env = FALSE,
   )
 
   # edit the file to not use SLURM for the test
