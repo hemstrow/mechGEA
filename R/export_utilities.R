@@ -174,6 +174,7 @@ example_slurm_job <- function(beagle_files,
   beagle_files <- bfp
 
   # format and save the metadata
+  resort <- "FALSE"
   if(is.list(sample_metadata) & !methods::is(sample_metadata, "sf")){
     if(all(c("patch_info", "patches_xy", "env") %in% names(sample_metadata))){
 
@@ -190,10 +191,18 @@ example_slurm_job <- function(beagle_files,
                   paste0(c("patch_info", "patches_xy", "env"), collapse = ", "), "\n"))
     }
   } else {
-    sample_metadata <- prepare_metadata(sample_metadata, env_mean_method, idp = idp)
+    sample_metadata <- prepare_metadata(sample_metadata, env_mean_method, idp = idp, resort = TRUE)
     if(!isFALSE(prune_r2)){
       sample_metadata$env <- prune_envs(sample_metadata$env, r2 = prune_r2)
     }
+
+    if("n_ord" %in% names(sample_metadata)){
+      n_ord <- sample_metadata$n_ord
+      sample_metadata$n_ord <- NULL
+      resort <- normalizePath(paste0(control_file_prefix, "new_order.txt"), mustWork = FALSE)
+      writeLines(as.character(n_ord), resort)
+    }
+
     smpath <- normalizePath(paste0(control_file_prefix, "sample_metadata.RDS"), mustWork = FALSE)
     saveRDS(sample_metadata, smpath)
     sample_metadata <- smpath
@@ -238,6 +247,8 @@ example_slurm_job <- function(beagle_files,
   xfun::gsub_file(sh, "TIME_REPLACE", job_time)
   xfun::gsub_file(sh, "CORES_REPLACE", cores)
   xfun::gsub_file(sh, "MEM_REPLACE", memory)
+  xfun::gsub_file(sh, "MEM_REPLACE", memory)
+  xfun::gsub_file(sh, "ORDER_REPLACE", resort)
 
   if(isFALSE(conda_env)){
     shs <- readLines(sh)

@@ -41,6 +41,7 @@ dir_prefix=DIR_REPLACE
 env=ENV_REPLACE
 execution_Rscript=RSCRIPT_REPLACE
 mig_res=MIG_RES_REPLACE
+new_order=ORDER_REPLACE
 
 conda activate $env
 
@@ -57,6 +58,12 @@ metadata=$(realpath $metadata)
 parameter_file=$(realpath $parameter_file)
 execution_Rscript=$(realpath $execution_Rscript)
 
+if [ -f "$new_order" ]; then
+    new_order=$(realpath $new_order)
+else
+    new_order="FALSE"
+fi
+
 # make a working directory and move to it
 working_dir="${dir_prefix}/partition_${SLURM_ARRAY_TASK_ID}_${bn}"
 
@@ -65,5 +72,5 @@ mkdir -p $working_dir
 cd $working_dir
 
 # Run the actual R script
-Rscript $execution_Rscript $beagle $metadata $parameter_file $mig_res
+Rscript $execution_Rscript $beagle $metadata $parameter_file $mig_res $new_order
 

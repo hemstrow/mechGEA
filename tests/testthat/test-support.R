@@ -60,6 +60,10 @@ test_that("slurm_example", {
   mig <- inputs[grep("mig_res", inputs)]
   expect_equal(mig, "mig_res=FALSE")
 
+  # no need to resort
+  expect_equal(sh[grep("new_order=", sh)[1]], "new_order=FALSE")
+
+
   # resources
   ## array
   array <- sh[grep("--array=", sh)]
@@ -209,6 +213,44 @@ test_that("slurm_example", {
   unlink("./outputs/", recursive = TRUE) # cleanup
   unlink("./control/", recursive = TRUE)
 
+
+  #===========sample reordering needed==========
+  beagle <- system.file("extdata", "example.beagle.gz", package = "mechGEA")
+  chunks <- get_chunks(beagle, loci_per_chunk = 150, outdir = ".")
+
+  # then, create the slurm job
+  expect_warning(slurm_script <- example_slurm_job(
+    beagle_files = chunks,
+    sample_metadata = sample_metadata[sample(nrow(sample_metadata), nrow(sample_metadata), FALSE),], # shuffled meta
+    conda_env = FALSE,
+    control_file_prefix = "./control/",
+    output_dir = "./outputs/",
+    prune_r2 = 0.7, # prune envs
+    iter_sampling_gea = 100,
+    iter_warmup_gea = 200,
+    iter_sampling_mig = 100,
+    iter_warmup_mig = 200,
+    migration_loci = 100,
+    setup_env = FALSE,
+  ), "Samples re-ordered")
+
+  # edit the file to not use SLURM for the test
+  sh <- readLines("control/example_slurm_array_job.sh")
+  sh <- gsub("\\$SLURM_ARRAY_TASK_ID", 1, sh)
+  sh <- gsub("\\$\\{SLURM_ARRAY_TASK_ID\\}", 1, sh)
+  sh <- sh[!grepl("#SBATCH", sh)]
+  sh <- sh[!grepl("conda activate", sh)]
+
+  expect_equal(sh[grep("new_order=", sh)[1]], "new_order=/mnt/c/Users/hemst/Documents/Github/mechGEA/control/new_order.RDS")
+
+  # read in and double check inputs
+  res <- readRDS("outputs/partition_1_chunk_00/final_results.RDS")
+  expect_true(sum(res$SNP_pvalues$nlogp > 4) %in% c(4, 5)) # occasionally 4
+
+  # cleanup
+  file.remove(chunks)
+  unlink("./outputs/", recursive = TRUE) # cleanup
+  unlink("./control/", recursive = TRUE)
 })
 
 

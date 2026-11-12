@@ -4,12 +4,22 @@ beagle <- as.character(args[1])
 meta <- readRDS(as.character(args[2]))
 parms <- readRDS(as.character(args[3]))
 migration_res <- as.character(args[4])
+new_order <- NULL
+if(!as.character(args[5]) == "FALSE"){
+  if(file.exists(as.character(args[5]))){
+    new_order <- as.numeric(readLines(args[5]))
+    cat("WARNING: sample metadata (and input beagle) are being resorted due to patches not in blocks. New order:\n")
+    print(new_order)
+  } else {
+    stop("Could not find new sample order.\n")
+  }
+} else {cat("Samples in blocks.\n")}
 
 cat("Formatting", beagle, "as phred-scaled likelihoods.\n")
 
-Phred <- beagle2pl(beagle)
+Phred <- beagle2pl(beagle, ind_order = new_order)
 
-cat("Done. Data inputs:\n")
+cat("Data inputs:\n")
 cat("=========================================\n.Phred:\n")
 print(utils::head(Phred)[,1:6])
 cat("=========================================\n.patch_info:\n")

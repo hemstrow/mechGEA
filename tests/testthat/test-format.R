@@ -193,4 +193,9 @@ test_that("prepare_metadata",{
   expect_true(d1 < d4) # lower idp should always be closer to straight means
   expect_equal(uw$env, w0$env) # with zero weight, will be the mean
 
+
+  # resort
+  tmp <- sample_metadata[sample(nrow(sample_metadata), nrow(sample_metadata), FALSE),]
+  expect_warning(test <- prepare_metadata(sample_meta = tmp, resort = TRUE), "Samples re-ordered")
+  expect_identical(test[1:3], prepare_metadata(tmp[test$n_ord,]))
 })

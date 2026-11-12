@@ -4,7 +4,12 @@
 \alias{prepare_metadata}
 \title{Format metadata for analysis.}
 \usage{
-prepare_metadata(sample_meta, env_mean_method = "unweighted", idp = 1)
+prepare_metadata(
+  sample_meta,
+  env_mean_method = "unweighted",
+  idp = 1,
+  resort = FALSE
+)
 }
 \arguments{
 \item{sample_meta}{\code{\link[sf]{sf}} POINT geometry containing two
@@ -26,6 +31,13 @@ environmental variables are averaged across samples. Options:
 \item{idp}{integer, default 1. Inverse-distance power used for weighted
 environmental averages. Ignored if \code{env_mean_method == "weighted"}.
 Higher values give less weight to points distant from the patch centroid.}
+
+\item{resort}{logical, default FALSE. If TRUE, outputs will be automatically
+resorted such that patches are in blocks if needed. An additional output
+(n_ord) will be returned with the order used to resort that can be passed
+to \code{\link{beagle2pl}} to resort genotypes identically on read.
+WARNING: failing to resort beagle on read will cause incorrect downstream
+results.}
 }
 \description{
 From a \code{\link[sf]{sf}} object containing patch and individual IDs as

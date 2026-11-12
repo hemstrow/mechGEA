@@ -265,12 +265,19 @@ get_chunks <- function(beagle_file,
 #' @param idp integer, default 1. Inverse-distance power used for weighted
 #'   environmental averages. Ignored if \code{env_mean_method == "weighted"}.
 #'   Higher values give less weight to points distant from the patch centroid.
+#' @param resort logical, default FALSE. If TRUE, outputs will be automatically
+#'   resorted such that patches are in blocks if needed. An additional output
+#'   (n_ord) will be returned with the order used to resort that can be passed
+#'   to \code{\link{beagle2pl}} to resort genotypes identically on read.
+#'   WARNING: failing to resort beagle on read will cause incorrect downstream
+#'   results.
 #'
 #' @export
 #' @author William Hemstrom
 prepare_metadata <- function(sample_meta,
                              env_mean_method = "unweighted",
-                             idp = 1){
+                             idp = 1,
+                             resort = FALSE){
 
   .check.installed("sf")
 
@@ -297,8 +304,17 @@ prepare_metadata <- function(sample_meta,
   }
 
   if(isFALSE(in_blocks)){
-    stop("Some observations are not in continous blocks by patch. Individuals in both the metadata AND the genotypic
+    if(resort){
+      n.ord <- unlist(order(dt$patch))
+      dt <- dt[n.ord,]
+      patch_info <- patch_info[n.ord,]
+      sample_meta <- sample_meta[n.ord,]
+      warning("Samples re-ordered into blocks. Sorting order returned in `$n_ord`. Failing to resort beagle on read will cause incorrect downstream results.\n")
+    } else {
+      stop("Some observations are not in continous blocks by patch. Individuals in both the metadata AND the genotypic
          data MUST be in blocks/sorted by patch.\n")
+    }
+
   }
 
 
@@ -351,7 +367,12 @@ prepare_metadata <- function(sample_meta,
   ret <- list(patch_info = patch_info[,.(ind_id, patch)],
               patches_xy = patch_xy,
               env = envs)
-  return(lapply(ret, as.data.frame))
+
+  ret <- lapply(ret, as.data.frame)
+  if(!in_blocks){
+    ret <- c(ret, list(n_ord = n.ord))
+  }
+  return(ret)
 }
 
 
