@@ -12,7 +12,12 @@ An example output is in
 ## Usage
 
 ``` r
-prepare_metadata(sample_meta, env_mean_method = "unweighted", idp = 1)
+prepare_metadata(
+  sample_meta,
+  env_mean_method = "unweighted",
+  idp = 1,
+  resort = FALSE
+)
 ```
 
 ## Arguments
@@ -46,6 +51,16 @@ prepare_metadata(sample_meta, env_mean_method = "unweighted", idp = 1)
   environmental averages. Ignored if `env_mean_method == "weighted"`.
   Higher values give less weight to points distant from the patch
   centroid.
+
+- resort:
+
+  logical, default FALSE. If TRUE, outputs will be automatically
+  resorted such that patches are in blocks if needed. An additional
+  output (n_ord) will be returned with the order used to resort that can
+  be passed to
+  [`beagle2pl`](https://hemstrow.github.io/mechGEA/reference/beagle2pl.md)
+  to resort genotypes identically on read. WARNING: failing to resort
+  beagle on read will cause incorrect downstream results.
 
 ## Author
 
